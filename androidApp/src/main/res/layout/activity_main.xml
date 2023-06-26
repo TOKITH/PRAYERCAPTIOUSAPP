@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp"
+    tools:context=".MainActivity">
+
+<!--    Start of Acceleration visualisation stuff-->
+    <TextView
+        android:id="@+id/shakeAcceleration"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="shakeAcceleration"
+        android:layout_gravity="left"
+        android:textSize="15sp"/>
+
+    <ProgressBar
+        android:id="@+id/shakeMeter"
+        android:layout_gravity="center"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        style="?android:attr/progressBarStyleHorizontal"
+        android:paddingBottom="20dp"
+        android:max="90"/>
+<!--    End of Acceleration visaulisation-->
+
+<!--    Start of Gyroscope graph view stuff-->
+
+    <com.jjoe64.graphview.GraphView
+        android:id="@+id/gyroGraph"
+        android:layout_width="match_parent"
+        android:layout_height="200dip"/>
+
+<!--    End of Gyroscope graph view stuff-->
+    <!--    Start Gyroscope text view stuff-->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:paddingBottom="100dp">
+    <TextView
+        android:id="@+id/x_gyroscope"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="x-axis gyroscope"
+        android:layout_gravity="start"
+        android:paddingStart="5dp"
+        android:paddingEnd="15dp"
+        android:textSize="15sp"/>
+    <TextView
+        android:id="@+id/y_gyroscope"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:paddingStart="5dp"
+        android:paddingEnd="15dp"
+        android:text="y-axis gyroscope"
+        android:textSize="15sp"/>
+    <TextView
+        android:id="@+id/z_gyroscope"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="end"
+        android:paddingStart="5dp"
+        android:paddingEnd="15dp"
+        android:text="z-axis gyroscope"
+        android:textSize="15sp"/>
+    </LinearLayout>
+<!--    End of Gyroscope stuff-->
+
+    <!--    Start of Linear acceleration graph view stuff-->
+
+    <com.jjoe64.graphview.GraphView
+        android:id="@+id/linearaccGraph"
+        android:layout_width="match_parent"
+        android:layout_height="200dip"/>
+
+    <!--    End of Linear acceleration graph view stuff-->
+
+<!--    Start of Linear acceleration text view stuff-->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+        <TextView
+            android:id="@+id/x_linear_acc"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="x-axis linear_acc"
+            android:layout_gravity="start"
+            android:paddingStart="5dp"
+            android:paddingEnd="5dp"
+            android:textSize="15sp"/>
+        <TextView
+            android:id="@+id/y_linear_acc"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:paddingStart="5dp"
+            android:paddingEnd="5dp"
+            android:text="y-axis linear_acc"
+            android:textSize="15sp"/>
+        <TextView
+            android:id="@+id/z_linear_acc"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="end"
+            android:paddingStart="5dp"
+            android:paddingEnd="5dp"
+            android:text="z-axis linear_acc"
+            android:textSize="15sp"/>
+    </LinearLayout>
+<!--    End of Linear acceleration text view stuff-->
+
+
+</LinearLayout>
+
