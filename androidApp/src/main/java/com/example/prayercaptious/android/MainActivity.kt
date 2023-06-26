@@ -60,7 +60,7 @@ class MainActivity : ComponentActivity(), SensorEventListener {
     ))
     private var pointsplottedGyro: Double = 0.0
     private var pointsplottedLinear:Double = 0.0
-    private val maxplots:Int = 200
+    private val maxplots:Int = 10000
 
     //It provides methods to access and manage various sensors available on android
     private lateinit var mSensorManager: SensorManager
