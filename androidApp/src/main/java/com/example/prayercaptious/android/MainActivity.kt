@@ -4,30 +4,15 @@ import android.content.Context
 import android.hardware.Sensor
 import android.hardware.SensorManager
 import android.os.Bundle
-import android.widget.ProgressBar
-import android.widget.TextView
 import androidx.activity.ComponentActivity
-import com.jjoe64.graphview.GraphView
+import com.example.prayercaptious.android.databinding.ActivityMainBinding
 
 
 // suffix ? means the variable can be null
 class MainActivity : ComponentActivity(){
 
-    //Late initialising x,y,z textview (xml ones) (text users cannot edit but displayed to user)
-    //late initialising because they need to be initialised onCreated method()
-    private lateinit var x_gyroscope: TextView
-    private lateinit var y_gyroscope: TextView
-    private lateinit var z_gyroscope: TextView
-    private lateinit var x_linear_acc: TextView
-    private lateinit var y_linear_acc: TextView
-    private lateinit var z_linear_acc: TextView
-
-    //Progress bar
-    private lateinit var shakeMeter: ProgressBar
-    private lateinit var shakeAcceleration: TextView
-    //Graph view
-    private lateinit var gyroGraph: GraphView
-    private lateinit var linearaccGraph: GraphView
+    //contains all the ids of text view, graph view etc as keybinding ;)
+    private lateinit var binding: ActivityMainBinding
 
     //It provides methods to access and manage various sensors available on android
     private lateinit var mSensorManager: SensorManager
@@ -43,7 +28,11 @@ class MainActivity : ComponentActivity(){
         // your activity, such as setting the content view, initializing
         // UI components, binding data, or setting up event listeners.
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
+
+        //inflates the xml file layout
+        binding = ActivityMainBinding.inflate(layoutInflater)
+        //shows the layout as ContentView
+        setContentView(binding.root)
 
         //getting sensor service as SensorManager
         // activating gyroscope and linear acceleration sensor from SENSOR_SERVICE
@@ -51,41 +40,29 @@ class MainActivity : ComponentActivity(){
         gyroscopeSensor = mSensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE)
         linearaccSensor = mSensorManager.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION)
 
-        //getting text view ids that will show delta sensor data
-        x_linear_acc = findViewById(R.id.x_linear_acc)
-        y_linear_acc = findViewById(R.id.y_linear_acc)
-        z_linear_acc = findViewById(R.id.z_linear_acc)
-        x_gyroscope = findViewById(R.id.x_gyroscope)
-        y_gyroscope = findViewById(R.id.y_gyroscope)
-        z_gyroscope = findViewById(R.id.z_gyroscope)
-
-        //getting progress bar ids that will show progress bar stuff
-        shakeMeter = findViewById(R.id.shakeMeter)
-        shakeAcceleration = findViewById(R.id.shakeAcceleration)
-
-        //getting graph view ids to show graphs
-        linearaccGraph = findViewById(R.id.linearaccGraph)
-        gyroGraph = findViewById(R.id.gyroGraph)
 
         sensors = sensors(
             mSensorManager,
             gyroscopeSensor,
             linearaccSensor,
-            x_gyroscope,
-            y_gyroscope,
-            z_gyroscope,
-            x_linear_acc,
-            y_linear_acc,
-            z_linear_acc,
-            gyroGraph,
-            linearaccGraph,
-            shakeAcceleration,
-            shakeMeter)
+            binding.xGyroscope,
+            binding.yGyroscope,
+            binding.zGyroscope,
+            binding.xLinearAcc,
+            binding.yLinearAcc,
+            binding.zLinearAcc,
+            binding.gyroGraph,
+            binding.linearaccGraph,
+            binding.shakeAcceleration,
+            binding.shakeMeter)
 
+        //plots data real time and separates xyz axis by color
         sensors.plotSeriesData()
         sensors.seriesColour()
-        sensors.graphSettings(gyroGraph)
-        sensors.graphSettings(linearaccGraph)
+
+        //Zoom into current graph
+        sensors.graphSettings(binding.gyroGraph)
+        sensors.graphSettings(binding.linearaccGraph)
     }
 
     //Android life cycle functions onResume, onPause and onDestroy

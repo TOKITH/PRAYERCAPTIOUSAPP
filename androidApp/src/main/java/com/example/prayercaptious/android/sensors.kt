@@ -238,11 +238,11 @@ open class sensors(
 
     private fun updateTextAndColourLinearacc(x:Float, y:Float, z:Float){
 
-        x_la.text = ("x_linearacc = ${x.toInt()}")
+        x_la.text = ("x_lin_acc = ${x.toInt()}")
         x_la.setTextColor(Color.parseColor("#00FF00")) // green
-        y_la.text = ("y_linearacc = ${y.toInt()}")
+        y_la.text = ("y_lin_acc = ${y.toInt()}")
         y_la.setTextColor(Color.parseColor("#FF0000")) //red
-        z_la.text = ("z_linearacc = ${z.toInt()}")
+        z_la.text = ("z_lin_acc = ${z.toInt()}")
         z_la.setTextColor(Color.parseColor("#FFFF00")) //yellow
     }
     private fun resetGraph(seriesx: LineGraphSeries<DataPoint>,
