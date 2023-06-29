@@ -41,34 +41,28 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:paddingBottom="100dp">
+        android:paddingBottom="100dp"
+        android:layout_weight="3">
     <TextView
         android:id="@+id/x_gyroscope"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="x-axis gyroscope"
-        android:layout_gravity="start"
-        android:paddingStart="5dp"
-        android:paddingEnd="15dp"
-        android:textSize="15sp"/>
+        android:layout_weight="1"/>
     <TextView
         android:id="@+id/y_gyroscope"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_gravity="center"
-        android:paddingStart="5dp"
-        android:paddingEnd="15dp"
         android:text="y-axis gyroscope"
-        android:textSize="15sp"/>
+        android:textSize="15sp"
+        android:layout_weight="1"/>
     <TextView
         android:id="@+id/z_gyroscope"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_gravity="end"
-        android:paddingStart="5dp"
-        android:paddingEnd="15dp"
         android:text="z-axis gyroscope"
-        android:textSize="15sp"/>
+        android:textSize="15sp"
+        android:layout_weight="1"/>
     </LinearLayout>
 <!--    End of Gyroscope stuff-->
 
@@ -85,34 +79,28 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal">
+        android:orientation="horizontal"
+        android:layout_weight="3">
         <TextView
             android:id="@+id/x_linear_acc"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="x-axis linear_acc"
-            android:layout_gravity="start"
-            android:paddingStart="5dp"
-            android:paddingEnd="5dp"
-            android:textSize="15sp"/>
+            android:layout_weight="1"/>
         <TextView
             android:id="@+id/y_linear_acc"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:paddingStart="5dp"
-            android:paddingEnd="5dp"
             android:text="y-axis linear_acc"
-            android:textSize="15sp"/>
+            android:textSize="15sp"
+            android:layout_weight="1"/>
         <TextView
             android:id="@+id/z_linear_acc"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_gravity="end"
-            android:paddingStart="5dp"
-            android:paddingEnd="5dp"
             android:text="z-axis linear_acc"
-            android:textSize="15sp"/>
+            android:textSize="15sp"
+            android:layout_weight="1"/>
     </LinearLayout>
 <!--    End of Linear acceleration text view stuff-->
 
