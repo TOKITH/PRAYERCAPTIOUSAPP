@@ -4,15 +4,20 @@ import android.content.Context
 import android.hardware.Sensor
 import android.hardware.SensorManager
 import android.os.Bundle
+import android.os.CountDownTimer
 import androidx.activity.ComponentActivity
 import com.example.prayercaptious.android.databinding.ActivityMainBinding
+import com.example.prayercaptious.android.databinding.HomeScreenBinding
+import kotlin.math.round
 
 
 // suffix ? means the variable can be null
 class MainActivity : ComponentActivity(){
 
-    //contains all the ids of text view, graph view etc as keybinding ;)
+    //binding1 is the main activity binding and binding2 is home screen binding
+    // Type naming convention is filename with first letters capital and appended Binding at the end
     private lateinit var binding: ActivityMainBinding
+    private lateinit var bindinghome: HomeScreenBinding
 
     //It provides methods to access and manage various sensors available on android
     private lateinit var mSensorManager: SensorManager
@@ -23,6 +28,7 @@ class MainActivity : ComponentActivity(){
     private lateinit var sensors: sensors
 
 
+
     override fun onCreate(savedInstanceState: Bundle?) {
         //initialization and allows you to proceed with custom logic specific to activity
         // your activity, such as setting the content view, initializing
@@ -30,10 +36,62 @@ class MainActivity : ComponentActivity(){
         super.onCreate(savedInstanceState)
 
         //inflates the xml file layout
+        bindinghome = HomeScreenBinding.inflate(layoutInflater)
         binding = ActivityMainBinding.inflate(layoutInflater)
-        //shows the layout as ContentView
-        setContentView(binding.root)
 
+        //shows home screen first
+        homeStuff()
+
+        //from home screen moves to sensor stuff
+        sensorStuff()
+    }
+
+    //Android life cycle functions onResume, onPause and onDestroy
+    override fun onResume() {
+        super.onResume()
+//        sensors.registerListeners()
+    }
+
+    override fun onPause() {
+        super.onPause()
+        //make this redundant once all the functions are built because
+        //the sensors are supposed to be active while the user prays putting app in background
+        sensors.unregisterListeners()
+    }
+
+
+    override fun onDestroy() {
+        super.onDestroy()
+        sensors.unregisterListeners()
+    }
+
+    fun homeStuff(){
+        //shows home layout
+        setContentView(bindinghome.root)
+
+        val countdown = object : CountDownTimer(20000, 1000) {
+
+            override fun onTick(millisUntilFinished: Long) {
+                bindinghome.tvCountdown.text = round(millisUntilFinished.toDouble() / 1000).toString()
+            }
+
+            override fun onFinish() {
+                setContentView(binding.root)
+                sensors.registerListeners()
+            }
+        }
+
+        //10 second timer before start collecting data
+        bindinghome.btnTimerStart.setOnClickListener() {
+            countdown.start()
+        }
+
+        //cancel timer if more time is required
+        bindinghome.btnTimerStop.setOnClickListener(){
+            countdown.cancel()
+        }
+    }
+    fun sensorStuff(){
         //getting sensor service as SensorManager
         // activating gyroscope and linear acceleration sensor from SENSOR_SERVICE
         mSensorManager = getSystemService(Context.SENSOR_SERVICE) as SensorManager
@@ -64,28 +122,6 @@ class MainActivity : ComponentActivity(){
         sensors.graphSettings(binding.gyroGraph)
         sensors.graphSettings(binding.linearaccGraph)
     }
-
-    //Android life cycle functions onResume, onPause and onDestroy
-    override fun onResume() {
-        super.onResume()
-        sensors.registerListeners()
-
-
-    }
-
-    override fun onPause() {
-        super.onPause()
-        //make this redundant once all the functions are built because
-        //the sensors are supposed to be active while the user prays putting app in background
-        sensors.unregisterListeners()
-    }
-
-
-    override fun onDestroy() {
-        super.onDestroy()
-        sensors.unregisterListeners()
-    }
-
 
 
 }
