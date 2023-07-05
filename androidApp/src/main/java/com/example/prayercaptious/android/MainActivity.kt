@@ -26,6 +26,7 @@ class MainActivity : ComponentActivity(){
 
     //Sensor class
     private lateinit var sensors: sensors
+    private var islistening: Boolean = false
 
 
 
@@ -49,15 +50,17 @@ class MainActivity : ComponentActivity(){
     //Android life cycle functions onResume, onPause and onDestroy
     override fun onResume() {
         super.onResume()
-//        sensors.registerListeners()
+        if (islistening) {
+            sensors.registerListeners()
+        }
     }
 
-    override fun onPause() {
+    override fun onPause() { ///////////////////////////////////
         super.onPause()
         //make this redundant once all the functions are built because
         //the sensors are supposed to be active while the user prays putting app in background
         sensors.unregisterListeners()
-    }
+    }//////////////////////////////////////////////////////////
 
 
     override fun onDestroy() {
@@ -78,6 +81,7 @@ class MainActivity : ComponentActivity(){
             override fun onFinish() {
                 setContentView(binding.root)
                 sensors.registerListeners()
+                islistening=true
             }
         }
 
@@ -91,6 +95,7 @@ class MainActivity : ComponentActivity(){
             countdown.cancel()
         }
     }
+
     fun sensorStuff(){
         //getting sensor service as SensorManager
         // activating gyroscope and linear acceleration sensor from SENSOR_SERVICE
