@@ -1,6 +1,7 @@
 package com.example.prayercaptious.android
 
 import android.content.Context
+import android.content.pm.ActivityInfo
 import android.hardware.Sensor
 import android.hardware.SensorManager
 import android.os.Bundle
@@ -13,7 +14,8 @@ import kotlin.math.round
 
 // suffix ? means the variable can be null
 class MainActivity : ComponentActivity(){
-
+    // lock rotation
+    private lateinit var requestedOrientation: ActivityInfo
     //binding1 is the main activity binding and binding2 is home screen binding
     // Type naming convention is filename with first letters capital and appended Binding at the end
     private lateinit var binding: ActivityMainBinding
@@ -35,7 +37,7 @@ class MainActivity : ComponentActivity(){
         // your activity, such as setting the content view, initializing
         // UI components, binding data, or setting up event listeners.
         super.onCreate(savedInstanceState)
-
+        requestedOrientation = ActivityInfo()
         //inflates the xml file layout
         bindinghome = HomeScreenBinding.inflate(layoutInflater)
         binding = ActivityMainBinding.inflate(layoutInflater)
@@ -72,7 +74,7 @@ class MainActivity : ComponentActivity(){
         //shows home layout
         setContentView(bindinghome.root)
 
-        val countdown = object : CountDownTimer(20000, 1000) {
+        val countdown = object : CountDownTimer(3000, 1000) {
 
             override fun onTick(millisUntilFinished: Long) {
                 bindinghome.tvCountdown.text = round(millisUntilFinished.toDouble() / 1000).toString()

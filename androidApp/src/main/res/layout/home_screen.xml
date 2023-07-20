@@ -21,7 +21,7 @@
         android:layout_gravity="center"
         android:layout_weight="1"
         android:textSize="150dp"
-        android:text = "20.0"/>
+        android:text = "3.0"/>
 
     <Button
         android:id="@+id/btnTimerStop"
