@@ -14,7 +14,7 @@
         android:id="@+id/shakeAcceleration"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="shakeAcceleration"
+        android:text="@string/acceleration"
         android:layout_gravity="left"
         android:textSize="15sp"/>
 
@@ -47,20 +47,20 @@
         android:id="@+id/x_gyroscope"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="x-axis gyroscope"
+        android:text="@string/xgyro"
         android:layout_weight="1"/>
     <TextView
         android:id="@+id/y_gyroscope"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="y-axis gyroscope"
+        android:text="@string/ygyro"
         android:textSize="15sp"
         android:layout_weight="1"/>
     <TextView
         android:id="@+id/z_gyroscope"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="z-axis gyroscope"
+        android:text="@string/zgyro"
         android:textSize="15sp"
         android:layout_weight="1"/>
     </LinearLayout>
@@ -85,20 +85,20 @@
             android:id="@+id/x_linear_acc"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="x-axis linear_acc"
+            android:text="@string/xlinacc"
             android:layout_weight="1"/>
         <TextView
             android:id="@+id/y_linear_acc"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="y-axis linear_acc"
+            android:text="@string/ylinacc"
             android:textSize="15sp"
             android:layout_weight="1"/>
         <TextView
             android:id="@+id/z_linear_acc"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="z-axis linear_acc"
+            android:text="@string/zlinacc"
             android:textSize="15sp"
             android:layout_weight="1"/>
     </LinearLayout>

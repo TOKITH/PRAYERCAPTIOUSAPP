@@ -11,24 +11,24 @@
         android:id="@+id/btnTimerStart"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Click to begin countdown"
+        android:text="@string/countdown_startbtn"
+        android:textSize="20sp"
         android:layout_weight="1"/>
 
     <TextView
         android:id="@+id/tvCountdown"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_gravity="center"
-        android:layout_weight="1"
-        android:textSize="150dp"
-        android:text = "3.0"/>
+        android:textAlignment="center"
+        android:textSize="200sp"
+        android:text = "@string/countdown"/>
 
     <Button
         android:id="@+id/btnTimerStop"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Click to stop countdown"
-        android:layout_weight="1"
-        android:layout_gravity="bottom" />
+        android:text="@string/countdown_resetbtn"
+        android:textSize="20sp"
+        android:layout_weight="1" />
 
 </LinearLayout>

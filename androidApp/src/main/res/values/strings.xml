@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--Home screen-->
+    <string name="countdown_startbtn">Click to begin countdown</string>
+    <string name="countdown_resetbtn">Click to reset countdown</string>
+    <string name="countdown">3.0</string>
+
+    <!--Activity main-->
+    <string name="acceleration">Shake acceleration</string>
+    <string name="xgyro">x gyroscope</string>
+    <string name="ygyro">y gyroscope</string>
+    <string name="zgyro">z gyro</string>
+    <string name="xlinacc">x linear acc</string>
+    <string name="ylinacc">y linear acc</string>
+    <string name="zlinacc">z linear acc</string>
+
+    <!--Registration page-->
+    <string name="register_page">Register Below 😄</string>
+    <string name="name">Name</string>
+    <string name="email">Email</string>
+    <string name="password">Password</string>
+    <string name="verify_password">Verify Password</string>
+    <string name="registerbtn">Register</string>
+
+    <!--Login page-->
+    <string name="login_page">Login Below 😄</string>
+    <string name="loginbtn">Log in</string>
+    <string name="or">OR</string>
+
+
+</resources>

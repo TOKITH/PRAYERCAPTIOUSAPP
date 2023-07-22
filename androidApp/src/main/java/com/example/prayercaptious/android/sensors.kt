@@ -126,9 +126,9 @@ open class sensors(
     //  4) Adds shake meter progressbar and shows shake acceleration
     private fun gyroData(event: SensorEvent?){
 
-        var x: Float = event!!.values[0]
-        var y: Float = event!!.values[1]
-        var z: Float = event!!.values[2]
+        val x: Float = event!!.values[0]
+        val y: Float = event.values[1]
+        val z: Float = event.values[2]
 
         appendGyroData(x.toDouble(),y.toDouble(),z.toDouble())
 
@@ -162,9 +162,9 @@ open class sensors(
     //  3) Updates text label of x,y,z
     //  4) Adds shake meter progressbar and shows shake acceleration
     private fun linearaccData(event: SensorEvent?){
-        var x: Float = event!!.values[0]
-        var y: Float = event!!.values[1]
-        var z: Float = event!!.values[2]
+        val x: Float = event!!.values[0]
+        val y: Float = event.values[1]
+        val z: Float = event.values[2]
 
         appendLinearaccData(x.toDouble(),y.toDouble(),z.toDouble())
 

@@ -1,7 +1,6 @@
 package com.example.prayercaptious.android
 
 import android.content.Context
-import android.content.pm.ActivityInfo
 import android.hardware.Sensor
 import android.hardware.SensorManager
 import android.os.Bundle
@@ -9,17 +8,18 @@ import android.os.CountDownTimer
 import androidx.activity.ComponentActivity
 import com.example.prayercaptious.android.databinding.ActivityMainBinding
 import com.example.prayercaptious.android.databinding.HomeScreenBinding
+import com.example.prayercaptious.android.databinding.RegistrationLoginBinding
 import kotlin.math.round
 
 
 // suffix ? means the variable can be null
 class MainActivity : ComponentActivity(){
-    // lock rotation
-    private lateinit var requestedOrientation: ActivityInfo
+
     //binding1 is the main activity binding and binding2 is home screen binding
     // Type naming convention is filename with first letters capital and appended Binding at the end
     private lateinit var binding: ActivityMainBinding
     private lateinit var bindinghome: HomeScreenBinding
+    private lateinit var bindinglogin: RegistrationLoginBinding
 
     //It provides methods to access and manage various sensors available on android
     private lateinit var mSensorManager: SensorManager
@@ -37,10 +37,14 @@ class MainActivity : ComponentActivity(){
         // your activity, such as setting the content view, initializing
         // UI components, binding data, or setting up event listeners.
         super.onCreate(savedInstanceState)
-        requestedOrientation = ActivityInfo()
+
         //inflates the xml file layout
         bindinghome = HomeScreenBinding.inflate(layoutInflater)
         binding = ActivityMainBinding.inflate(layoutInflater)
+        bindinglogin = RegistrationLoginBinding.inflate(layoutInflater)
+
+        //shows login or registration page
+        register_loginStuff()
 
         //shows home screen first
         homeStuff()
@@ -70,9 +74,12 @@ class MainActivity : ComponentActivity(){
         sensors.unregisterListeners()
     }
 
+    fun register_loginStuff(){
+        setContentView(bindinglogin.root)
+    }
     fun homeStuff(){
         //shows home layout
-        setContentView(bindinghome.root)
+//        setContentView(bindinghome.root)
 
         val countdown = object : CountDownTimer(3000, 1000) {
 
