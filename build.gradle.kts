@@ -1,6 +1,11 @@
 buildscript {
+    val kotlin_version by extra("1.9.0")
     dependencies {
         classpath("com.android.tools.build:gradle:8.0.0")
+        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version")
+    }
+    repositories {
+        mavenCentral()
     }
 }
 plugins {

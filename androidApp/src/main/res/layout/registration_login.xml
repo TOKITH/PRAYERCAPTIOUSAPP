@@ -10,6 +10,7 @@
     tools:context=".MainActivity">
 
     <TextView
+        android:id="@+id/login_tv"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="@string/login_page"
@@ -18,6 +19,7 @@
         android:textSize="20sp"/>
 
     <EditText
+        android:id="@+id/login_email_et"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="10dp"
@@ -25,6 +27,7 @@
         android:inputType="textEmailAddress"/>
 
     <EditText
+        android:id="@+id/login_pass_et"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="10dp"
@@ -32,6 +35,7 @@
         android:inputType="textPassword"/>
 
     <Button
+        android:id="@+id/login_btn"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:padding="20dp"
@@ -46,11 +50,12 @@
         android:textAlignment="center"/>
 
     <Button
+        android:id="@+id/register_rd_btn"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:padding="20dp"
         android:layout_marginTop="20dp"
-        android:text="@string/registerbtn"/>
+        android:text="@string/register_page_rd"/>
 
 
 

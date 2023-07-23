@@ -5,10 +5,12 @@ import android.hardware.Sensor
 import android.hardware.SensorManager
 import android.os.Bundle
 import android.os.CountDownTimer
+import android.util.Log
 import androidx.activity.ComponentActivity
 import com.example.prayercaptious.android.databinding.ActivityMainBinding
 import com.example.prayercaptious.android.databinding.HomeScreenBinding
 import com.example.prayercaptious.android.databinding.RegistrationLoginBinding
+import com.example.prayercaptious.android.databinding.RegistrationPageBinding
 import kotlin.math.round
 
 
@@ -20,6 +22,7 @@ class MainActivity : ComponentActivity(){
     private lateinit var binding: ActivityMainBinding
     private lateinit var bindinghome: HomeScreenBinding
     private lateinit var bindinglogin: RegistrationLoginBinding
+    private lateinit var bindingregister: RegistrationPageBinding
 
     //It provides methods to access and manage various sensors available on android
     private lateinit var mSensorManager: SensorManager
@@ -30,6 +33,8 @@ class MainActivity : ComponentActivity(){
     private lateinit var sensors: sensors
     private var islistening: Boolean = false
 
+    //Register verification class
+    private lateinit var register: verifyregistratoin
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -38,10 +43,11 @@ class MainActivity : ComponentActivity(){
         // UI components, binding data, or setting up event listeners.
         super.onCreate(savedInstanceState)
 
-        //inflates the xml file layout
+        //inflates the xml file layout: shows keybindings and content of specific xml page
         bindinghome = HomeScreenBinding.inflate(layoutInflater)
         binding = ActivityMainBinding.inflate(layoutInflater)
         bindinglogin = RegistrationLoginBinding.inflate(layoutInflater)
+        bindingregister = RegistrationPageBinding.inflate(layoutInflater)
 
         //shows login or registration page
         register_loginStuff()
@@ -61,12 +67,12 @@ class MainActivity : ComponentActivity(){
         }
     }
 
-    override fun onPause() { ///////////////////////////////////
+    override fun onPause() {
         super.onPause()
         //make this redundant once all the functions are built because
         //the sensors are supposed to be active while the user prays putting app in background
         sensors.unregisterListeners()
-    }//////////////////////////////////////////////////////////
+    }
 
 
     override fun onDestroy() {
@@ -76,6 +82,58 @@ class MainActivity : ComponentActivity(){
 
     fun register_loginStuff(){
         setContentView(bindinglogin.root)
+
+        register = verifyregistratoin(
+            bindingregister.regNameEt,
+            bindingregister.regEmailEt,
+            bindingregister.regPassEt,
+            bindingregister.regConfirmPassEt
+        )
+        //////Make sure to enter trimmed name, email,password for registration in DB
+        var name = bindingregister.regNameEt.text.toString().trim()
+        var email = bindingregister.regEmailEt.text.toString().trim()
+        var pass = bindingregister.regPassEt.text.toString().trim()
+
+        Log.d("myTags",bindingregister.regNameEt.text.toString())
+
+        //Redirects to registration page from login
+        bindinglogin.registerRdBtn.setOnClickListener(){
+            setContentView(bindingregister.root)
+        }
+
+        //Redirects to login page from registration
+        bindingregister.loginRdBtn.setOnClickListener(){
+            setContentView(bindinglogin.root)
+        }
+
+        //Properly registering will redirect to login
+        bindingregister.registerBtn.setOnClickListener(){
+//            //verification tests
+//            if (register.verify_blank(this)){
+//                MyUtils.showToast(this,"Verified blank check!")
+//            }
+//
+//            if (register.verify_name(this)){
+//                MyUtils.showToast(this,"Verified name check!")
+//            }
+//
+//            if (register.verify_email(this)){
+//                MyUtils.showToast(this,"Verified email check!")
+//            }
+//
+//            if (register.verify_password(this)){
+//                MyUtils.showToast(this,"Verified password check!")
+//            }
+
+            if( register.verify_blank(this)
+                && register.verify_name(this)
+                && register.verify_email(this)
+                && register.verify_password(this)
+            ) {
+                MyUtils.showToast(this, "Registration Complete\nLogin now :)")
+                setContentView(bindinglogin.root)
+            }
+        }
     }
     fun homeStuff(){
         //shows home layout

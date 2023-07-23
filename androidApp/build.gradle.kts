@@ -24,7 +24,7 @@ android {
 //        enable = true
 //    }
     composeOptions {
-        kotlinCompilerExtensionVersion = "1.4.7"
+        kotlinCompilerExtensionVersion = "1.5.0"
     }
     packaging {
         resources {
@@ -64,4 +64,4 @@ dependencies {
     implementation("androidx.activity:activity-compose:1.7.2")
     implementation("com.jjoe64:graphview:4.2.2")
 
-    }
+}
