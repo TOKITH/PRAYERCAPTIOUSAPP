@@ -38,7 +38,7 @@ class MainActivity : ComponentActivity(){
 
     //Database class
     private lateinit var db: SQLliteDB
-    private lateinit var insertData: InsertDataDB
+    private lateinit var userData:User
 
 
 
@@ -106,10 +106,15 @@ class MainActivity : ComponentActivity(){
         // 2) rd to login page
         // 3) clear register page
         bindingregister.registerBtn.setOnClickListener(){
-            if(register.verify_user_data(this)) {
-                if (!insertData.insert_user_data(register.verified_user_data())){
+            if(register.verified_user_data(this)) {
+                //User data
+                val name = bindingregister.regNameEt.text.toString().trim()
+                val email = bindingregister.regEmailEt.text.toString().trim().lowercase()
+                val pass = bindingregister.regPassEt.text.toString().trim()
+                userData = User(name,email,pass)
+                if (!db.insertRegistrationUserData(userData)){
                     MyUtils.showToast(this,"Registration successful")
-                    setContentView(bindingregister.root)
+                    setContentView(bindinglogin.root)
                     register.clear_register()
                     MyUtils.showToast(this,"Log in now :)")
                 } else MyUtils.showToast(this,"Something went wrong!!!")
@@ -187,12 +192,8 @@ class MainActivity : ComponentActivity(){
             bindingregister.regConfirmPassEt
         )
 
-        //inset data into database
         //Initalizing Database
         db = SQLliteDB(this)
-        insertData = InsertDataDB(db)
-
-
 
     }
 

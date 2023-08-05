@@ -80,23 +80,15 @@ class VerifyRegistratoin(
         return false
     }
 
-    fun verify_user_data(context: Context): Boolean {
-        return ( this.verify_blank(context)
-                && this.verify_name(context)
-                && this.verify_email(context)
-                && this.verify_password(context)
+    fun verified_user_data(context: Context): Boolean {
+        val isDataValid= (this.verify_blank(context)
+                        && this.verify_name(context)
+                        && this.verify_email(context)
+                        && this.verify_password(context)
+//                        && !this.verify_existing_user(context)
                 )
-//                && !this.verify_existing_user(context)
-    }
 
-    fun verified_user_data(): MutableList<String>{
-        val name = reg_name.text.toString().trim()
-        val email = reg_email.text.toString().trim().lowercase()
-        val pass = reg_pass.text.toString().trim()
-
-        val userData = mutableListOf<String>(name,email,pass)
-
-        return userData
+        return (isDataValid)
     }
 
     fun clear_register(){

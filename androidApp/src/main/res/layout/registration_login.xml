@@ -57,6 +57,13 @@
         android:layout_marginTop="20dp"
         android:text="@string/register_page_rd"/>
 
+    <TextView
+        android:id="@+id/database_tv"
+        android:text="SQLdata"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"/>
+
 
 
 </LinearLayout>

@@ -2,8 +2,10 @@ package com.example.prayercaptious.android
 
 import android.content.ContentValues
 import android.content.Context
+import android.database.Cursor
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
+import android.util.Log
 import androidx.core.content.contentValuesOf
 
 class SQLliteDB(
@@ -77,15 +79,32 @@ class SQLliteDB(
     }
 
     //Inserting data into DB
-    fun insertRegistrationUserData(name:String,email:String,pass:String):Boolean{
+    fun insertRegistrationUserData(user:User):Boolean{
         val db = this.writableDatabase
-        var cv = ContentValues()
-        cv.put(COL_NAME,name)
-        cv.put(COL_EMAIL,email)
-        cv.put(COL_PASSWORD,pass)
+        val cv = ContentValues()
+        cv.put(COL_NAME, user.name)
+        cv.put(COL_EMAIL, user.email)
+        cv.put(COL_PASSWORD, user.pass)
+
         val result = db.insert(TABLE_USER,null, cv)
         // if result is -1 than some error has occured
-        return result == -1.toLong()
+        return result == (-1).toLong()
+    }
+
+    fun readRegistrationUserData(): MutableList<User>{
+
+        var UserDataList:MutableList<User> = ArrayList()
+
+        val db = this.readableDatabase
+        val query = "SELECT * FROM "+ TABLE_USER
+        val cursor:Cursor = db.rawQuery(query,null)
+
+
+
+        cursor.close()
+        db.close()
+        return UserDataList
+
     }
 
 }
