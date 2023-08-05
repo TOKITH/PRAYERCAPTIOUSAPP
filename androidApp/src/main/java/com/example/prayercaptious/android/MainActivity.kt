@@ -33,8 +33,13 @@ class MainActivity : ComponentActivity(){
     private lateinit var sensors: sensors
     private var islistening: Boolean = false
 
-    //Register verification class
-    private lateinit var register: verifyregistratoin
+    //Registration
+    private lateinit var register: VerifyRegistratoin
+
+    //Database class
+    private lateinit var db: SQLliteDB
+    private lateinit var insertData: InsertDataDB
+
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -49,10 +54,13 @@ class MainActivity : ComponentActivity(){
         bindinglogin = RegistrationLoginBinding.inflate(layoutInflater)
         bindingregister = RegistrationPageBinding.inflate(layoutInflater)
 
+        //useful classes
+        useful_classes_services()
+
         //shows login or registration page
         register_loginStuff()
 
-        //shows home screen first
+        //shows home screen
         homeStuff()
 
         //from home screen moves to sensor stuff
@@ -83,19 +91,6 @@ class MainActivity : ComponentActivity(){
     fun register_loginStuff(){
         setContentView(bindinglogin.root)
 
-        register = verifyregistratoin(
-            bindingregister.regNameEt,
-            bindingregister.regEmailEt,
-            bindingregister.regPassEt,
-            bindingregister.regConfirmPassEt
-        )
-        //////Make sure to enter trimmed name, email,password for registration in DB
-        var name = bindingregister.regNameEt.text.toString().trim()
-        var email = bindingregister.regEmailEt.text.toString().trim()
-        var pass = bindingregister.regPassEt.text.toString().trim()
-
-        Log.d("myTags",bindingregister.regNameEt.text.toString())
-
         //Redirects to registration page from login
         bindinglogin.registerRdBtn.setOnClickListener(){
             setContentView(bindingregister.root)
@@ -106,32 +101,18 @@ class MainActivity : ComponentActivity(){
             setContentView(bindinglogin.root)
         }
 
-        //Properly registering will redirect to login
+        //Properly registering will:
+        // 1) store data into DB
+        // 2) rd to login page
+        // 3) clear register page
         bindingregister.registerBtn.setOnClickListener(){
-//            //verification tests
-//            if (register.verify_blank(this)){
-//                MyUtils.showToast(this,"Verified blank check!")
-//            }
-//
-//            if (register.verify_name(this)){
-//                MyUtils.showToast(this,"Verified name check!")
-//            }
-//
-//            if (register.verify_email(this)){
-//                MyUtils.showToast(this,"Verified email check!")
-//            }
-//
-//            if (register.verify_password(this)){
-//                MyUtils.showToast(this,"Verified password check!")
-//            }
-
-            if( register.verify_blank(this)
-                && register.verify_name(this)
-                && register.verify_email(this)
-                && register.verify_password(this)
-            ) {
-                MyUtils.showToast(this, "Registration Complete\nLogin now :)")
-                setContentView(bindinglogin.root)
+            if(register.verify_user_data(this)) {
+                if (!insertData.insert_user_data(register.verified_user_data())){
+                    MyUtils.showToast(this,"Registration successful")
+                    setContentView(bindingregister.root)
+                    register.clear_register()
+                    MyUtils.showToast(this,"Log in now :)")
+                } else MyUtils.showToast(this,"Something went wrong!!!")
             }
         }
     }
@@ -164,13 +145,25 @@ class MainActivity : ComponentActivity(){
     }
 
     fun sensorStuff(){
+        //plots data real time and separates xyz axis by color
+        sensors.plotSeriesData()
+        sensors.seriesColour()
+
+        //Zoom into current graph
+        sensors.graphSettings(binding.gyroGraph)
+        sensors.graphSettings(binding.linearaccGraph)
+    }
+
+
+    fun useful_classes_services(){
+
         //getting sensor service as SensorManager
         // activating gyroscope and linear acceleration sensor from SENSOR_SERVICE
         mSensorManager = getSystemService(Context.SENSOR_SERVICE) as SensorManager
         gyroscopeSensor = mSensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE)
         linearaccSensor = mSensorManager.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION)
 
-
+        //sensor class collects sensor x,y,z data and plots sensor data
         sensors = sensors(
             mSensorManager,
             gyroscopeSensor,
@@ -186,13 +179,21 @@ class MainActivity : ComponentActivity(){
             binding.shakeAcceleration,
             binding.shakeMeter)
 
-        //plots data real time and separates xyz axis by color
-        sensors.plotSeriesData()
-        sensors.seriesColour()
+        //Verifies data entered in registration boxes
+        register = VerifyRegistratoin(
+            bindingregister.regNameEt,
+            bindingregister.regEmailEt,
+            bindingregister.regPassEt,
+            bindingregister.regConfirmPassEt
+        )
 
-        //Zoom into current graph
-        sensors.graphSettings(binding.gyroGraph)
-        sensors.graphSettings(binding.linearaccGraph)
+        //inset data into database
+        //Initalizing Database
+        db = SQLliteDB(this)
+        insertData = InsertDataDB(db)
+
+
+
     }
 
 

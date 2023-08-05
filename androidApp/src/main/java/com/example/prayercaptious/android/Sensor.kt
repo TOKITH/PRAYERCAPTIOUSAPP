@@ -30,19 +30,19 @@ import kotlin.math.round
 // class function : gyroscopeData , linearaccData
 // class function : gyroscopeGraph , linearaccData
 open class sensors(
-            var mSensorManager: SensorManager,
-            var gyroscopeSensor: Sensor?,
-            var linearaccSensor: Sensor?,
-            var x_g: TextView,
-            var y_g: TextView,
-            var z_g: TextView,
-            var x_la: TextView,
-            var y_la: TextView,
-            var z_la: TextView,
-            var graphg: GraphView,
-            var graphla: GraphView,
-            var shakemeteracc: TextView,
-            var shakemeter: ProgressBar
+    var mSensorManager: SensorManager,
+    var gyroscopeSensor: Sensor?,
+    var linearaccSensor: Sensor?,
+    var x_g: TextView,
+    var y_g: TextView,
+    var z_g: TextView,
+    var x_la: TextView,
+    var y_la: TextView,
+    var z_la: TextView,
+    var graphg: GraphView,
+    var graphla: GraphView,
+    var shakemeteracc: TextView,
+    var shakemeter: ProgressBar
 ): SensorEventListener {
     //shake meter acceleration calculation stuff
     private var currentAcceleration: Double = 0.0
@@ -191,7 +191,7 @@ open class sensors(
         // z axis
         linearaccZseries.appendData(DataPoint(pointsplottedLinearacc,round(z)),true,pointsplottedLinearacc.toInt())
 
-        }
+    }
 
     //PlotSeriesData: plots realtime appended data into graph
     fun plotSeriesData(){
@@ -265,11 +265,11 @@ open class sensors(
     }
 
     private fun shakeMeter(x:Float,y:Float,z:Float){
-            currentAcceleration= Math.sqrt((x*x+y*y+z*z).toDouble())
-            deltaAcceleration = Math.abs(currentAcceleration-previousAcceleration)*10
-            previousAcceleration = currentAcceleration
-            shakemeteracc.text = ("Rotate/Moving delta acceleration = ${deltaAcceleration.toInt()}")
-            shakemeter.setProgress(deltaAcceleration.toInt())
+        currentAcceleration= Math.sqrt((x*x+y*y+z*z).toDouble())
+        deltaAcceleration = Math.abs(currentAcceleration-previousAcceleration)*10
+        previousAcceleration = currentAcceleration
+        shakemeteracc.text = ("Rotate/Moving delta acceleration = ${deltaAcceleration.toInt()}")
+        shakemeter.setProgress(deltaAcceleration.toInt())
     }
 
 
