@@ -7,4 +7,9 @@ object MyUtils {
     fun showToast(context: Context, message: String) {
         Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
     }
+
+    fun myDB(context:Context): SQLliteDB {
+        return SQLliteDB(context)
+    }
 }
+

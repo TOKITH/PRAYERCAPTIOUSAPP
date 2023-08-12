@@ -74,18 +74,20 @@ class VerifyRegistratoin(
     }
 
     fun verify_existing_user(context: Context): Boolean {
-        MyUtils.showToast(context,
-            "TODO: Check from DB if the user email exist to verify existing user",)
-
-        return false
+        val email = reg_email.text.toString().trim().lowercase()
+        val db = MyUtils.myDB(context)
+        if (db.verifyExistingUser(email)){
+            MyUtils.showToast(context,"Your email already exist")
+        }
+        return !db.verifyExistingUser(email)
     }
 
     fun verified_user_data(context: Context): Boolean {
         val isDataValid= (this.verify_blank(context)
+                        && this.verify_existing_user(context)
                         && this.verify_name(context)
                         && this.verify_email(context)
                         && this.verify_password(context)
-//                        && !this.verify_existing_user(context)
                 )
 
         return (isDataValid)

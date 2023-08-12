@@ -1,7 +1,7 @@
 package com.example.prayercaptious.android
 
 class User(
-    var id:Int=0,
+    var id: Int=0,
     var name: String="",
     var email: String="",
     var pass: String=""
@@ -10,6 +10,6 @@ class User(
         this.name = name
         this.email = email
         this.pass = pass
-
     }
+
 }

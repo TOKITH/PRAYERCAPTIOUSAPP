@@ -120,6 +120,40 @@ class MainActivity : ComponentActivity(){
                 } else MyUtils.showToast(this,"Something went wrong!!!")
             }
         }
+
+        bindinglogin.loginBtn.setOnClickListener(){
+            val email_entered = bindinglogin.loginEmailEt.text.toString().trim().lowercase()
+            val pass_entered = bindinglogin.loginPassEt.text.toString()
+            val login_details:MutableList<User> = db.login_details(email_entered)
+            // >0 size means found logon details
+            if (login_details.size > 0){
+                if (login_details[0].pass == pass_entered){
+                    MyUtils.showToast(this,"Login success")
+                }else MyUtils.showToast(this,"Password does not match")
+            } else MyUtils.showToast(this,"Email not found")
+        }
+
+        bindinglogin.ordeleteBtn.setOnClickListener(){
+            readData()
+//            deleteData()
+        }
+    }
+
+    fun readData(){
+        var data:MutableList<User> = db.readRegistrationUserData()
+        bindinglogin.databaseTv.text="ID NAME EMAIL PASS\n"
+        for (i in 0 until data.size){
+            bindinglogin.databaseTv.append(
+                data[i].id.toString()+" "+
+                        data[i].name+" "+
+                        data[i].email+" "+
+                        data[i].pass+"\n"
+            )
+        }
+    }
+
+    fun deleteData(){
+        db.deleteRegistrationUserData()
     }
     fun homeStuff(){
         //shows home layout
@@ -193,10 +227,9 @@ class MainActivity : ComponentActivity(){
         )
 
         //Initalizing Database
-        db = SQLliteDB(this)
+        db = MyUtils.myDB(this)
 
     }
 
 
 }
-

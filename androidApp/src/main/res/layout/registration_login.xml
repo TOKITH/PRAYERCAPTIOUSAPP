@@ -42,7 +42,8 @@
         android:layout_marginTop="100dp"
         android:text="@string/loginbtn"/>
 
-    <TextView
+    <Button
+        android:id="@+id/ordelete_btn"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="@string/or"
@@ -57,12 +58,17 @@
         android:layout_marginTop="20dp"
         android:text="@string/register_page_rd"/>
 
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:fillViewport="true">
     <TextView
         android:id="@+id/database_tv"
         android:text="SQLdata"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="20dp"/>
+    </ScrollView>
 
 
 

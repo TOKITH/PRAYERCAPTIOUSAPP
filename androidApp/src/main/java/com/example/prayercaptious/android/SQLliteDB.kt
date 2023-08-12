@@ -37,17 +37,18 @@ class SQLliteDB(
         private val COL_X_LINACC = "x_linacc"
         private val COL_Y_LINACC = "y_linacc"
         private val COL_Z_LINACC = "z_linacc"
+
     }
 
     override fun onCreate(db: SQLiteDatabase?) {
-        val createUserTable = ("CREATE TABLE "+ TABLE_USER+ "("
+        val createUserTable = ("CREATE TABLE "+ TABLE_USER+ " ("
                 + COL_USER_ID+" INTEGER PRIMARY KEY AUTOINCREMENT,"
-                + COL_NAME+" VARCHAR(255),"
-                + COL_EMAIL+" VARCHAR(255),"
-                + COL_PASSWORD+" VARCHAR(255)"
+                + COL_NAME+" VARCHAR(255) NOT NULL,"
+                + COL_EMAIL+" VARCHAR(255) NOT NULL,"
+                + COL_PASSWORD+" VARCHAR(255) NOT NULL"
                 +");"
                 )
-        val createGyroscopeTable = ("CREATE TABLE "+ TABLE_GYRO+"("
+        val createGyroscopeTable = ("CREATE TABLE "+ TABLE_GYRO+" ("
                 + COL_USER_ID+"INTEGER,"
                 + COL_PRAYER_ID+"INTEGER,"
                 + COL_TIMESTAMP+"TEXT,"
@@ -58,7 +59,7 @@ class SQLliteDB(
                 +");"
                 )
 
-        val createLinAccTable = ("CREATE TABLE "+ TABLE_GYRO+"("
+        val createLinAccTable = ("CREATE TABLE "+ TABLE_LINACC+" ("
                 + COL_USER_ID+"INTEGER,"
                 + COL_PRAYER_ID+"INTEGER,"
                 + COL_TIMESTAMP+"TEXT,"
@@ -87,6 +88,7 @@ class SQLliteDB(
         cv.put(COL_PASSWORD, user.pass)
 
         val result = db.insert(TABLE_USER,null, cv)
+        db.close()
         // if result is -1 than some error has occured
         return result == (-1).toLong()
     }
@@ -99,12 +101,56 @@ class SQLliteDB(
         val query = "SELECT * FROM "+ TABLE_USER
         val cursor:Cursor = db.rawQuery(query,null)
 
+        if (cursor.moveToFirst()){
 
+            do{
+                val user: User = User()
+                user.id = cursor.getString(cursor.getColumnIndex(COL_USER_ID).toInt()).toInt()
+                user.name = cursor.getString(cursor.getColumnIndex(COL_NAME).toInt())
+                user.email = cursor.getString(cursor.getColumnIndex(COL_EMAIL).toInt())
+                user.pass = cursor.getString(cursor.getColumnIndex(COL_PASSWORD).toInt())
+                UserDataList.add(user)
+            }while (cursor.moveToNext())
+        }
 
         cursor.close()
         db.close()
         return UserDataList
 
+    }
+    fun deleteRegistrationUserData(){
+        val db = this.writableDatabase
+        db.delete(TABLE_USER,null,null)
+        db.close()
+    }
+
+    fun verifyExistingUser(email:String):Boolean {
+        val db = this.readableDatabase
+        val existingEmail = "SELECT * FROM $TABLE_USER WHERE $COL_EMAIL = '$email' "
+        val cursor:Cursor = db.rawQuery(existingEmail,null)
+
+        cursor.close()
+        db.close()
+
+        // moveToFirst = true means existing user as there are data to move to
+        // moveToFirst = false means non existing user
+        return cursor.moveToFirst()
+    }
+
+    fun login_details(email: String): MutableList<User>{
+        val db = this.readableDatabase
+        var userLoginDetails:MutableList<User> = arrayListOf()
+        val existingEmail = "SELECT * FROM $TABLE_USER WHERE $COL_EMAIL = '$email' "
+        val cursor:Cursor = db.rawQuery(existingEmail,null)
+
+        if (cursor.moveToFirst()){
+            val user:User = User()
+            user.email = cursor.getString(cursor.getColumnIndex(COL_EMAIL).toInt())
+            user.pass = cursor.getString(cursor.getColumnIndex(COL_PASSWORD).toInt())
+            userLoginDetails.add(user)
+        }
+        db.close()
+        return userLoginDetails
     }
 
 }
