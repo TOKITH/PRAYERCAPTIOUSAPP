@@ -41,7 +41,7 @@ class SQLliteDB(
     }
 
     override fun onCreate(db: SQLiteDatabase?) {
-        val createUserTable = ("CREATE TABLE "+ TABLE_USER+ " ("
+        val createUserTable = ("CREATE TABLE [IF NOT EXISTS] "+ TABLE_USER+ " ("
                 + COL_USER_ID+" INTEGER PRIMARY KEY AUTOINCREMENT,"
                 + COL_NAME+" VARCHAR(255) NOT NULL,"
                 + COL_EMAIL+" VARCHAR(255) NOT NULL,"
@@ -128,29 +128,33 @@ class SQLliteDB(
         val db = this.readableDatabase
         val existingEmail = "SELECT * FROM $TABLE_USER WHERE $COL_EMAIL = '$email' "
         val cursor:Cursor = db.rawQuery(existingEmail,null)
+        val existing = cursor.moveToFirst()
 
         cursor.close()
         db.close()
 
         // moveToFirst = true means existing user as there are data to move to
         // moveToFirst = false means non existing user
-        return cursor.moveToFirst()
+        return existing
     }
 
-    fun login_details(email: String): MutableList<User>{
+    fun login_details(user: User): User{
         val db = this.readableDatabase
-        var userLoginDetails:MutableList<User> = arrayListOf()
-        val existingEmail = "SELECT * FROM $TABLE_USER WHERE $COL_EMAIL = '$email' "
+        val entered_email = user.email
+        val existingEmail = "SELECT * FROM $TABLE_USER WHERE $COL_EMAIL = '$entered_email' "
         val cursor:Cursor = db.rawQuery(existingEmail,null)
 
-        if (cursor.moveToFirst()){
-            val user:User = User()
+        //set values to null unless there are values
+        user.email = null
+        user.pass = null
+        if (cursor.moveToFirst()) {
             user.email = cursor.getString(cursor.getColumnIndex(COL_EMAIL).toInt())
             user.pass = cursor.getString(cursor.getColumnIndex(COL_PASSWORD).toInt())
-            userLoginDetails.add(user)
+            user.name = cursor.getString(cursor.getColumnIndex(COL_NAME).toInt())
         }
         db.close()
-        return userLoginDetails
+        cursor.close()
+        return user
     }
 
 }

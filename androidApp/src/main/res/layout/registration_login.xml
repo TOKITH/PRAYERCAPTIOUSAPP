@@ -39,16 +39,8 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:padding="20dp"
-        android:layout_marginTop="100dp"
-        android:text="@string/loginbtn"/>
-
-    <Button
-        android:id="@+id/ordelete_btn"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="@string/or"
         android:layout_marginTop="20dp"
-        android:textAlignment="center"/>
+        android:text="@string/loginbtn"/>
 
     <Button
         android:id="@+id/register_rd_btn"
@@ -58,17 +50,44 @@
         android:layout_marginTop="20dp"
         android:text="@string/register_page_rd"/>
 
+<!--Temporary to read and write data-->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_gravity="center"
+        android:weightSum="2">
+
+        <Button
+            android:id="@+id/read_data_btn"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/read_data_btn"
+            android:layout_marginTop="20dp"
+            android:textAlignment="center"/>
+
+        <Button
+            android:id="@+id/delete_data_btn"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/delete_data_btn"
+            android:layout_marginTop="20dp"
+            android:textAlignment="center"/>
+
+    </LinearLayout>
+
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:fillViewport="true">
     <TextView
         android:id="@+id/database_tv"
-        android:text="SQLdata"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="20dp"/>
+        android:layout_marginTop="10dp"/>
     </ScrollView>
+
+<!--    End of temporary stuff-->
 
 
 

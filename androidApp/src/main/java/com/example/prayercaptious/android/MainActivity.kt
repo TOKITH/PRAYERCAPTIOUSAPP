@@ -61,7 +61,7 @@ class MainActivity : ComponentActivity(){
         register_loginStuff()
 
         //shows home screen
-        homeStuff()
+//        homeStuff()
 
         //from home screen moves to sensor stuff
         sensorStuff()
@@ -89,6 +89,7 @@ class MainActivity : ComponentActivity(){
     }
 
     fun register_loginStuff(){
+        //User has to login first to use the app
         setContentView(bindinglogin.root)
 
         //Redirects to registration page from login
@@ -117,47 +118,50 @@ class MainActivity : ComponentActivity(){
                     setContentView(bindinglogin.root)
                     register.clear_register()
                     MyUtils.showToast(this,"Log in now :)")
-                } else MyUtils.showToast(this,"Something went wrong!!!")
+                } else MyUtils.showToast(this,"Failed: registering data into db!!!")
             }
         }
 
         bindinglogin.loginBtn.setOnClickListener(){
             val email_entered = bindinglogin.loginEmailEt.text.toString().trim().lowercase()
             val pass_entered = bindinglogin.loginPassEt.text.toString()
-            val login_details:MutableList<User> = db.login_details(email_entered)
-            // >0 size means found logon details
-            if (login_details.size > 0){
-                if (login_details[0].pass == pass_entered){
+            userData = User(email_entered)
+            val userDetails_DB:User = db.login_details(userData)
+            // user details from DB != null means there are existing user email found for login
+            if (!userDetails_DB.email.isNullOrEmpty()){
+                if (userDetails_DB.pass == pass_entered){
                     MyUtils.showToast(this,"Login success")
+                    //shows home screen for the user
+                    homeStuff(userDetails_DB.name)
                 }else MyUtils.showToast(this,"Password does not match")
             } else MyUtils.showToast(this,"Email not found")
         }
 
-        bindinglogin.ordeleteBtn.setOnClickListener(){
-            readData()
-//            deleteData()
+        //read or delete data
+        bindinglogin.readDataBtn.setOnClickListener(){
+            val data:MutableList<User> = db.readRegistrationUserData()
+            bindinglogin.databaseTv.text = "ID NAME EMAIL PASS\n"
+            for (i in 0 until data.size){
+                bindinglogin.databaseTv.append(
+                    data[i].id.toString()+" "+
+                            data[i].name+" "+
+                            data[i].email+" "+
+                            data[i].pass+"\n"
+                )
+            }
         }
+
+        bindinglogin.deleteDataBtn.setOnClickListener(){
+            db.deleteRegistrationUserData()
+        }
+
     }
 
-    fun readData(){
-        var data:MutableList<User> = db.readRegistrationUserData()
-        bindinglogin.databaseTv.text="ID NAME EMAIL PASS\n"
-        for (i in 0 until data.size){
-            bindinglogin.databaseTv.append(
-                data[i].id.toString()+" "+
-                        data[i].name+" "+
-                        data[i].email+" "+
-                        data[i].pass+"\n"
-            )
-        }
-    }
+    fun homeStuff(name:String){
 
-    fun deleteData(){
-        db.deleteRegistrationUserData()
-    }
-    fun homeStuff(){
-        //shows home layout
-//        setContentView(bindinghome.root)
+        setContentView(bindinghome.root)
+
+        bindinghome.tvWelcomeUser.text = "As-Salaam-Alaikum $name 😁,\nWelcome back to Prayer Captious App!"
 
         val countdown = object : CountDownTimer(3000, 1000) {
 

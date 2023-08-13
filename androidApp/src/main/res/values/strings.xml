@@ -28,6 +28,8 @@
     <string name="loginbtn">Log in</string>
     <string name="register_page_rd">Register here</string>
     <string name="or">OR</string>
+    <string name="read_data_btn">Read Data</string>
+    <string name="delete_data_btn">Delete Data</string>
 
 
 </resources>
