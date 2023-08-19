@@ -41,32 +41,36 @@ class SQLliteDB(
     }
 
     override fun onCreate(db: SQLiteDatabase?) {
-        val createUserTable = ("CREATE TABLE [IF NOT EXISTS] "+ TABLE_USER+ " ("
+        val createUserTable = ("CREATE TABLE IF NOT EXISTS "+ TABLE_USER+ " ("
                 + COL_USER_ID+" INTEGER PRIMARY KEY AUTOINCREMENT,"
                 + COL_NAME+" VARCHAR(255) NOT NULL,"
                 + COL_EMAIL+" VARCHAR(255) NOT NULL,"
                 + COL_PASSWORD+" VARCHAR(255) NOT NULL"
                 +");"
                 )
-        val createGyroscopeTable = ("CREATE TABLE "+ TABLE_GYRO+" ("
-                + COL_USER_ID+"INTEGER,"
-                + COL_PRAYER_ID+"INTEGER,"
-                + COL_TIMESTAMP+"TEXT,"
-                + COL_X_GYRO+"REAL,"
-                + COL_Y_GYRO+"REAL,"
-                + COL_Z_GYRO+"REAL,"
-                + COL_MOTION+"VARCHAR(10)"
-                +");"
+        val createGyroscopeTable = ("CREATE TABLE IF NOT EXISTS "+ TABLE_GYRO+" ("
+                + COL_USER_ID+" INTEGER,"
+                + COL_PRAYER_ID+" INTEGER,"
+                + COL_TIMESTAMP+" TEXT,"
+                + COL_X_GYRO+" DOUBLE,"
+                + COL_Y_GYRO+" DOUBLE,"
+                + COL_Z_GYRO+" DOUBLE,"
+                + COL_MOTION+" VARCHAR(10)"
+                + " FOREIGN KEY($COL_USER_ID)"
+                + " REFERENCES $TABLE_USER ($COL_USER_ID) ON UPDATE CASCADE ON DELETE CASCADE"
+                + ");"
                 )
 
-        val createLinAccTable = ("CREATE TABLE "+ TABLE_LINACC+" ("
-                + COL_USER_ID+"INTEGER,"
-                + COL_PRAYER_ID+"INTEGER,"
-                + COL_TIMESTAMP+"TEXT,"
-                + COL_X_LINACC+"REAL,"
-                + COL_Y_LINACC+"REAL,"
-                + COL_Z_LINACC+"REAL,"
-                + COL_MOTION+"VARCHAR(10)"
+        val createLinAccTable = ("CREATE TABLE IF NOT EXISTS "+ TABLE_LINACC+" ("
+                + COL_USER_ID+" INTEGER,"
+                + COL_PRAYER_ID+" INTEGER,"
+                + COL_TIMESTAMP+" TEXT,"
+                + COL_X_LINACC+" DOUBLE,"
+                + COL_Y_LINACC+" DOUBLE,"
+                + COL_Z_LINACC+" DOUBLE,"
+                + COL_MOTION+" VARCHAR(10)"
+                + " FOREIGN KEY($COL_USER_ID)"
+                + " REFERENCES $TABLE_USER ($COL_USER_ID) ON UPDATE CASCADE ON DELETE CASCADE"
                 +");"
                 )
         //Creating user table :)
@@ -82,6 +86,7 @@ class SQLliteDB(
     //Inserting data into DB
     fun insertRegistrationUserData(user:User):Boolean{
         val db = this.writableDatabase
+//        val query = "INSERT INTO $TABLE_USER ($COL_NAME,$COL_EMAIL,$COL_PASSWORD) VALUES('${user.name}','${user.email}','${user.pass}');"
         val cv = ContentValues()
         cv.put(COL_NAME, user.name)
         cv.put(COL_EMAIL, user.email)
@@ -116,7 +121,6 @@ class SQLliteDB(
         cursor.close()
         db.close()
         return UserDataList
-
     }
     fun deleteRegistrationUserData(){
         val db = this.writableDatabase

@@ -80,6 +80,7 @@ open class sensors(
     private var maxplots_linearacc: Int = 20000
 
 
+
     fun registerListeners(){
         //  registering linear accleration sensor
         //  Sampling period is game with normal delay
@@ -126,11 +127,17 @@ open class sensors(
     //  4) Adds shake meter progressbar and shows shake acceleration
     private fun gyroData(event: SensorEvent?){
 
-        val x: Float = event!!.values[0]
-        val y: Float = event.values[1]
-        val z: Float = event.values[2]
+        var xg: Float = event!!.values[0]
+        val yg: Float = event.values[1]
+        val zg: Float = event.values[2]
 
-        appendGyroData(x.toDouble(),y.toDouble(),z.toDouble())
+        val x:Double = String.format("%.2f", xg).toDouble()
+        val y:Double = String.format("%.2f", yg).toDouble()
+        val z:Double = String.format("%.2f", zg).toDouble()
+
+
+
+        appendGyroData(x,y,z)
 
         updateTextAndColourGyro(x,y,z)
 
@@ -147,13 +154,14 @@ open class sensors(
         pointsplottedGyro+=1.0
 
         //x axis
-        gyroXseries.appendData(DataPoint(pointsplottedGyro,round(x)),true,pointsplottedGyro.toInt())
+//        gyroXseries.appendData(DataPoint(pointsplottedGyro,round(x)),true,pointsplottedGyro.toInt())
+        gyroXseries.appendData(DataPoint(pointsplottedGyro,(x)),true,pointsplottedGyro.toInt())
 
         //y axis
-        gyroYseries.appendData(DataPoint(pointsplottedGyro,round(y)),true,pointsplottedGyro.toInt())
+        gyroYseries.appendData(DataPoint(pointsplottedGyro,(y)),true,pointsplottedGyro.toInt())
 
         // z axis
-        gyroZseries.appendData(DataPoint(pointsplottedGyro,round(z)),true,pointsplottedGyro.toInt())
+        gyroZseries.appendData(DataPoint(pointsplottedGyro,(z)),true,pointsplottedGyro.toInt())
     }
 
     //linearaccData:
@@ -162,11 +170,18 @@ open class sensors(
     //  3) Updates text label of x,y,z
     //  4) Adds shake meter progressbar and shows shake acceleration
     private fun linearaccData(event: SensorEvent?){
-        val x: Float = event!!.values[0]
-        val y: Float = event.values[1]
-        val z: Float = event.values[2]
 
-        appendLinearaccData(x.toDouble(),y.toDouble(),z.toDouble())
+        val xla: Float = event!!.values[0]
+        val yla: Float = event.values[1]
+        val zla: Float = event.values[2]
+
+        val x:Double = String.format("%.2f", xla).toDouble()
+        val y:Double = String.format("%.2f", yla).toDouble()
+        val z:Double = String.format("%.2f", zla).toDouble()
+
+
+
+        appendLinearaccData(x,y,z)
 
         updateTextAndColourLinearacc(x,y,z)
 
@@ -183,13 +198,13 @@ open class sensors(
         pointsplottedLinearacc+=1.0
 
         //x axis
-        linearaccXseries.appendData(DataPoint(pointsplottedLinearacc,round(x)),true,pointsplottedLinearacc.toInt())
+        linearaccXseries.appendData(DataPoint(pointsplottedLinearacc,(x)),true,pointsplottedLinearacc.toInt())
 
         //y axis
-        linearaccYseries.appendData(DataPoint(pointsplottedLinearacc,round(y)),true,pointsplottedLinearacc.toInt())
+        linearaccYseries.appendData(DataPoint(pointsplottedLinearacc,(y)),true,pointsplottedLinearacc.toInt())
 
         // z axis
-        linearaccZseries.appendData(DataPoint(pointsplottedLinearacc,round(z)),true,pointsplottedLinearacc.toInt())
+        linearaccZseries.appendData(DataPoint(pointsplottedLinearacc,(z)),true,pointsplottedLinearacc.toInt())
 
     }
 
@@ -225,24 +240,24 @@ open class sensors(
         linearaccZseries.color= Color.YELLOW
     }
 
-    private fun updateTextAndColourGyro(x:Float, y:Float, z:Float){
+    private fun updateTextAndColourGyro(x:Double, y:Double, z:Double){
 
-        x_g.text = ("x_gyro = ${x.toInt()}")
+        x_g.text = ("x_gyro = $x")
         x_g.setTextColor(Color.parseColor("#00FF00")) // green
-        y_g.text = ("y_gyro = ${y.toInt()}")
+        y_g.text = ("y_gyro = $y")
         y_g.setTextColor(Color.parseColor("#FF0000")) //red
-        z_g.text = ("z_gyro = ${z.toInt()}")
+        z_g.text = ("z_gyro = $z")
         z_g.setTextColor(Color.parseColor("#FFFF00")) //yellow
 
     }
 
-    private fun updateTextAndColourLinearacc(x:Float, y:Float, z:Float){
+    private fun updateTextAndColourLinearacc(x:Double, y:Double, z:Double){
 
-        x_la.text = ("x_lin_acc = ${x.toInt()}")
+        x_la.text = ("x_lin_acc = $x")
         x_la.setTextColor(Color.parseColor("#00FF00")) // green
-        y_la.text = ("y_lin_acc = ${y.toInt()}")
+        y_la.text = ("y_lin_acc = $y")
         y_la.setTextColor(Color.parseColor("#FF0000")) //red
-        z_la.text = ("z_lin_acc = ${z.toInt()}")
+        z_la.text = ("z_lin_acc = $z")
         z_la.setTextColor(Color.parseColor("#FFFF00")) //yellow
     }
     private fun resetGraph(seriesx: LineGraphSeries<DataPoint>,
@@ -264,12 +279,20 @@ open class sensors(
         graph.addSeries(seriesz)
     }
 
-    private fun shakeMeter(x:Float,y:Float,z:Float){
+    private fun shakeMeter(x:Double,y:Double,z:Double){
         currentAcceleration= Math.sqrt((x*x+y*y+z*z).toDouble())
         deltaAcceleration = Math.abs(currentAcceleration-previousAcceleration)*10
         previousAcceleration = currentAcceleration
         shakemeteracc.text = ("Rotate/Moving delta acceleration = ${deltaAcceleration.toInt()}")
         shakemeter.setProgress(deltaAcceleration.toInt())
+    }
+
+    fun gyroDataDB(x:Double,y:Double,z:Double){
+
+    }
+
+    fun linearaccDataDB(x:Double,y:Double,z:Double){
+
     }
 
 
