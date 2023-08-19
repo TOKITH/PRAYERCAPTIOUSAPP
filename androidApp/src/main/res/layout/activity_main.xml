@@ -50,22 +50,26 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:layout_marginBottom="75sp"
+        android:layout_marginBottom="5sp"
         android:weightSum="3">
+
         <TextView
-            android:id="@+id/x_gyroscope"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/xgyro"
-            android:layout_weight="1"/>
+        android:id="@+id/x_gyroscope"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/xgyro"
+        android:textSize="15sp"
+        android:layout_weight="1"/>
+
         <TextView
-            android:id="@+id/y_gyroscope"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+        android:id="@+id/y_gyroscope"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
         android:text="@string/ygyro"
         android:textSize="15sp"
         android:layout_weight="1"/>
-    <TextView
+
+        <TextView
         android:id="@+id/z_gyroscope"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -80,14 +84,14 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:id="@+id/tv_prayer_motion"
-        android:layout_marginBottom="10sp"
+        android:layout_marginBottom="5sp"
         android:text = "@string/prayermotion"/>
 
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Pressure Data"
-        android:layout_marginBottom="10sp"
+        android:text="Magnetic Data"
+        android:layout_marginBottom="5sp"
         android:id="@+id/tv_pressure_data"/>
 
 <!--    Start of Linear acceleration graph view stuff-->

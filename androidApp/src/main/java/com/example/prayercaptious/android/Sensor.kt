@@ -100,9 +100,9 @@ open class sensors(
 
     fun availabilityOfSensors():Boolean{
         //Check availability of sensors
-        val hasLinearAcc = linearaccSensor != null
-        val hasGyroscope = gyroscopeSensor != null
-        val hasMageticField = magneticfieldSensor != null
+        val hasLinearAcc = !(linearaccSensor == null)
+        val hasGyroscope = !(gyroscopeSensor == null)
+        val hasMageticField = !(magneticfieldSensor == null)
         val hasCrucialSensors:Boolean =
             hasLinearAcc
             && hasGyroscope
@@ -180,9 +180,18 @@ open class sensors(
 
     fun magneticData(event:SensorEvent?){
 
-        val magnetic:FloatArray = event!!.values
+        var xm: Float = event!!.values[0]
+        val ym: Float = event.values[1]
+        val zm: Float = event.values[2]
 
-        pressureData.text = ("Pressre applied:$magnetic")
+        val x:Double = String.format("%.2f", xm).toDouble()
+        val y:Double = String.format("%.2f", ym).toDouble()
+        val z:Double = String.format("%.2f", zm).toDouble()
+
+        pressureData.text = (
+                "\txmagnetic:$x" +
+                "\n\tymagnetic:$y" +
+                "\n\tzmagnetic:$z")
     }
     //gyroData:
     //  1) Extracts x,y,z values of gyroscope sensor
