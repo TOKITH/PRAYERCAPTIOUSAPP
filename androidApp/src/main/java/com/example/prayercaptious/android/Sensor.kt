@@ -1,15 +1,24 @@
 package com.example.prayercaptious.android
 
+import android.content.Context
+import android.content.pm.PackageManager
 import android.graphics.Color
 import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
+import android.os.Build
+import android.util.Log
 import android.widget.ProgressBar
 import android.widget.TextView
+import androidx.annotation.RequiresApi
+import com.example.prayercaptious.android.databinding.RegistrationLoginBinding
 import com.jjoe64.graphview.GraphView
 import com.jjoe64.graphview.series.DataPoint
 import com.jjoe64.graphview.series.LineGraphSeries
+import java.time.Instant
+import java.time.ZoneOffset
+import java.time.format.DateTimeFormatter
 import kotlin.math.round
 
 
@@ -30,9 +39,12 @@ import kotlin.math.round
 // class function : gyroscopeData , linearaccData
 // class function : gyroscopeGraph , linearaccData
 open class sensors(
+    var context: Context,
     var mSensorManager: SensorManager,
-    var gyroscopeSensor: Sensor?,
-    var linearaccSensor: Sensor?,
+//    var packageManager: PackageManager,
+//    var gyroscopeSensor: Sensor?,
+//    var linearaccSensor: Sensor?,
+//    var magneticSensor:Sensor?,
     var x_g: TextView,
     var y_g: TextView,
     var z_g: TextView,
@@ -42,8 +54,15 @@ open class sensors(
     var graphg: GraphView,
     var graphla: GraphView,
     var shakemeteracc: TextView,
-    var shakemeter: ProgressBar
+    var shakemeter: ProgressBar,
+    var timestamp: TextView,
+    var pressureData: TextView
 ): SensorEventListener {
+    //Sensors from sensor manager
+    val linearaccSensor:Sensor? = mSensorManager.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION)
+    val gyroscopeSensor:Sensor? = mSensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE)
+    val magneticfieldSensor:Sensor? = mSensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD)
+
     //shake meter acceleration calculation stuff
     private var currentAcceleration: Double = 0.0
     private var previousAcceleration: Double = 0.0
@@ -79,9 +98,27 @@ open class sensors(
     private var maxplots_gyro: Int = 20000
     private var maxplots_linearacc: Int = 20000
 
+    fun availabilityOfSensors():Boolean{
+        //Check availability of sensors
+        val hasLinearAcc = linearaccSensor != null
+        val hasGyroscope = gyroscopeSensor != null
+        val hasMageticField = magneticfieldSensor != null
+        val hasCrucialSensors:Boolean =
+            hasLinearAcc
+            && hasGyroscope
+            && hasMageticField
 
+        if (!hasCrucialSensors){
+            MyUtils.showToast(context,"Has gyroscope manager $hasGyroscope")
+            MyUtils.showToast(context,"Has Accelerometer manager $hasLinearAcc")
+            MyUtils.showToast(context,"Has Magnetic field manager $hasMageticField")
+        }
+        return hasCrucialSensors
+
+    }
 
     fun registerListeners(){
+
         //  registering linear accleration sensor
         //  Sampling period is game with normal delay
         mSensorManager.registerListener(
@@ -98,13 +135,21 @@ open class sensors(
             SensorManager.SENSOR_DELAY_GAME,
             SensorManager.SENSOR_DELAY_NORMAL
         )
+
+//          registering magnetic sensor
+        mSensorManager.registerListener(
+            this,
+            magneticfieldSensor,
+            SensorManager.SENSOR_DELAY_GAME,
+            SensorManager.SENSOR_DELAY_NORMAL
+        )
     }
 
     fun unregisterListeners(){
         mSensorManager.unregisterListener(this)
     }
 
-
+    @RequiresApi(Build.VERSION_CODES.O)
     override fun onSensorChanged(event: SensorEvent?) {
         if (event?.sensor?.type == Sensor.TYPE_GYROSCOPE){
             gyroData(event)
@@ -113,13 +158,32 @@ open class sensors(
             linearaccData(event)
         }
 
+        if (event?.sensor?.type == Sensor.TYPE_MAGNETIC_FIELD){
+            magneticData(event)
+        }
 
+        TimeStamp()
     }
 
     override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {
 //        TODO("Not yet implemented")
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
+    fun TimeStamp(){
+        val timestamp = DateTimeFormatter
+            .ofPattern("dd-MM-yyyy HH:mm:ss.SSSSSS")
+            .withZone(ZoneOffset.UTC)
+            .format(Instant.now())
+        this.timestamp.text = ("DataTimeStampGyro/linearacc: ${timestamp.toString()}")
+    }
+
+    fun magneticData(event:SensorEvent?){
+
+        val magnetic:FloatArray = event!!.values
+
+        pressureData.text = ("Pressre applied:$magnetic")
+    }
     //gyroData:
     //  1) Extracts x,y,z values of gyroscope sensor
     //  2) Appends x,y,z values of gyroscope data real time into series of data

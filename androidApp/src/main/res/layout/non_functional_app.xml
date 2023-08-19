@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <TextView
+        android:id="@+id/tv_missing_sensor"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="1) You phone is missing core sensors for this app to work\n\n\n\n\n\n2) You are either missing gyroscope sensor or accelerator meter sensor.\n\n\n\n\n\n3) Please pay attention to the toast message at the bottom of the screen when restarting app to see which"/>
+</LinearLayout>

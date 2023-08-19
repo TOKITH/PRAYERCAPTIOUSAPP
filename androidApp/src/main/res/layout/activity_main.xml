@@ -28,6 +28,15 @@
         android:max="90"/>
 <!--    End of Acceleration visaulisation-->
 
+<!--    Timer gyro-->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/tv_timestamp"
+        android:textAlignment="center"
+        android:text="Timestamp here"/>
+<!--    End of timer-->
+
 <!--    Start of Gyroscope graph view stuff-->
 
     <com.jjoe64.graphview.GraphView
@@ -41,7 +50,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:paddingBottom="100dp"
+        android:layout_marginBottom="75sp"
         android:weightSum="3">
         <TextView
             android:id="@+id/x_gyroscope"
@@ -66,7 +75,22 @@
     </LinearLayout>
 <!--    End of Gyroscope stuff-->
 
-    <!--    Start of Linear acceleration graph view stuff-->
+<!--    Prayer motion-->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/tv_prayer_motion"
+        android:layout_marginBottom="10sp"
+        android:text = "@string/prayermotion"/>
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Pressure Data"
+        android:layout_marginBottom="10sp"
+        android:id="@+id/tv_pressure_data"/>
+
+<!--    Start of Linear acceleration graph view stuff-->
 
     <com.jjoe64.graphview.GraphView
         android:id="@+id/linearaccGraph"
@@ -103,6 +127,17 @@
             android:layout_weight="1"/>
     </LinearLayout>
 <!--    End of Linear acceleration text view stuff-->
+
+    <Button
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/btn_stop_data_collection"
+        android:text="@string/stopdatacollection"/>
+    <Button
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/btn_start_data_collection"
+        android:text="@string/startdatacollection"/>
 
 
 </LinearLayout>

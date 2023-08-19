@@ -13,6 +13,9 @@
     <string name="xlinacc">x linear acc</string>
     <string name="ylinacc">y linear acc</string>
     <string name="zlinacc">z linear acc</string>
+    <string name="stopdatacollection">Stop data collection</string>
+    <string name="startdatacollection">Start data collection</string>
+    <string name="prayermotion">Prayer motion goes here</string>
 
     <!--Registration page-->
     <string name="register_page">Register Below 😄</string>
@@ -30,6 +33,7 @@
     <string name="or">OR</string>
     <string name="read_data_btn">Read Data</string>
     <string name="delete_data_btn">Delete Data</string>
+
 
 
 </resources>

@@ -1,16 +1,23 @@
 package com.example.prayercaptious.android
 
 import android.content.Context
+import android.content.pm.PackageManager
 import android.hardware.Sensor
 import android.hardware.SensorManager
+import android.os.Build
 import android.os.Bundle
 import android.os.CountDownTimer
 import android.util.Log
 import androidx.activity.ComponentActivity
+import androidx.annotation.RequiresApi
 import com.example.prayercaptious.android.databinding.ActivityMainBinding
 import com.example.prayercaptious.android.databinding.HomeScreenBinding
+import com.example.prayercaptious.android.databinding.NonFunctionalAppBinding
 import com.example.prayercaptious.android.databinding.RegistrationLoginBinding
 import com.example.prayercaptious.android.databinding.RegistrationPageBinding
+import java.time.Instant
+import java.time.ZoneOffset
+import java.time.format.DateTimeFormatter
 import kotlin.math.round
 
 
@@ -19,6 +26,7 @@ class MainActivity : ComponentActivity(){
 
     //binding1 is the main activity binding and binding2 is home screen binding
     // Type naming convention is filename with first letters capital and appended Binding at the end
+    private lateinit var bindingmissingsensor:NonFunctionalAppBinding
     private lateinit var binding: ActivityMainBinding
     private lateinit var bindinghome: HomeScreenBinding
     private lateinit var bindinglogin: RegistrationLoginBinding
@@ -26,8 +34,6 @@ class MainActivity : ComponentActivity(){
 
     //It provides methods to access and manage various sensors available on android
     private lateinit var mSensorManager: SensorManager
-    private var gyroscopeSensor: Sensor? = null
-    private var linearaccSensor: Sensor? = null
 
     //Sensor class
     private lateinit var sensors: sensors
@@ -40,8 +46,6 @@ class MainActivity : ComponentActivity(){
     private lateinit var db: SQLliteDB
     private lateinit var userData:User
 
-
-
     override fun onCreate(savedInstanceState: Bundle?) {
         //initialization and allows you to proceed with custom logic specific to activity
         // your activity, such as setting the content view, initializing
@@ -53,6 +57,7 @@ class MainActivity : ComponentActivity(){
         binding = ActivityMainBinding.inflate(layoutInflater)
         bindinglogin = RegistrationLoginBinding.inflate(layoutInflater)
         bindingregister = RegistrationPageBinding.inflate(layoutInflater)
+        bindingmissingsensor = NonFunctionalAppBinding.inflate(layoutInflater)
 
         //useful classes
         useful_classes_services()
@@ -60,11 +65,12 @@ class MainActivity : ComponentActivity(){
         //shows login or registration page
         register_loginStuff()
 
-        //shows home screen
-//        homeStuff()
+        //Check availability of core sensor for app to function in users phone
+        sensorsAvailabilityCheck()
 
         //from home screen moves to sensor stuff
         sensorStuff()
+
     }
 
     //Android life cycle functions onResume, onPause and onDestroy
@@ -72,6 +78,10 @@ class MainActivity : ComponentActivity(){
         super.onResume()
         if (islistening) {
             sensors.registerListeners()
+        }
+
+        if (!islistening) {
+            sensors.unregisterListeners()
         }
     }
 
@@ -88,6 +98,11 @@ class MainActivity : ComponentActivity(){
         sensors.unregisterListeners()
     }
 
+    fun sensorsAvailabilityCheck() {
+        if (!sensors.availabilityOfSensors()) {
+            setContentView(bindingmissingsensor.root)
+        }
+    }
     fun register_loginStuff(){
         //User has to login first to use the app
         setContentView(bindinglogin.root)
@@ -195,22 +210,29 @@ class MainActivity : ComponentActivity(){
         //Zoom into current graph
         sensors.graphSettings(binding.gyroGraph)
         sensors.graphSettings(binding.linearaccGraph)
+
+        binding.btnStopDataCollection.setOnClickListener(){
+            sensors.unregisterListeners()
+        }
+
+        binding.btnStartDataCollection.setOnClickListener(){
+            sensors.registerListeners()
+        }
+
+
     }
 
 
     fun useful_classes_services(){
 
         //getting sensor service as SensorManager
-        // activating gyroscope and linear acceleration sensor from SENSOR_SERVICE
+        // activating all required sensors in sensor class from SENSOR_SERVICE
         mSensorManager = getSystemService(Context.SENSOR_SERVICE) as SensorManager
-        gyroscopeSensor = mSensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE)
-        linearaccSensor = mSensorManager.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION)
 
         //sensor class collects sensor x,y,z data and plots sensor data
         sensors = sensors(
+            this,
             mSensorManager,
-            gyroscopeSensor,
-            linearaccSensor,
             binding.xGyroscope,
             binding.yGyroscope,
             binding.zGyroscope,
@@ -220,7 +242,10 @@ class MainActivity : ComponentActivity(){
             binding.gyroGraph,
             binding.linearaccGraph,
             binding.shakeAcceleration,
-            binding.shakeMeter)
+            binding.shakeMeter,
+            binding.tvTimestamp,
+            binding.tvPressureData
+            )
 
         //Verifies data entered in registration boxes
         register = VerifyRegistratoin(
