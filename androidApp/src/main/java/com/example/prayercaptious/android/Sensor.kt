@@ -295,9 +295,12 @@ open class sensors(
 
     fun graphSettings(graph:GraphView){
         graph.viewport.isScrollable = true
-        graph.viewport.isXAxisBoundsManual = true
+        graph.viewport.setMaxY(10.0)
+        graph.viewport.setMinY(-10.0)
         graph.viewport.setMaxX(pointsplottedGyro)
         graph.viewport.setMinX(pointsplottedGyro-200)
+        graph.viewport.isXAxisBoundsManual = true
+        graph.viewport.isYAxisBoundsManual = true
 
     }
 
