@@ -1,23 +1,16 @@
 package com.example.prayercaptious.android
 
 import android.content.Context
-import android.content.pm.PackageManager
 import android.hardware.Sensor
 import android.hardware.SensorManager
-import android.os.Build
 import android.os.Bundle
 import android.os.CountDownTimer
-import android.util.Log
 import androidx.activity.ComponentActivity
-import androidx.annotation.RequiresApi
 import com.example.prayercaptious.android.databinding.ActivityMainBinding
 import com.example.prayercaptious.android.databinding.HomeScreenBinding
 import com.example.prayercaptious.android.databinding.NonFunctionalAppBinding
 import com.example.prayercaptious.android.databinding.RegistrationLoginBinding
 import com.example.prayercaptious.android.databinding.RegistrationPageBinding
-import java.time.Instant
-import java.time.ZoneOffset
-import java.time.format.DateTimeFormatter
 import kotlin.math.round
 
 
@@ -62,14 +55,12 @@ class MainActivity : ComponentActivity(){
         //useful classes
         useful_classes_services()
 
-        //shows login or registration page
-        register_loginStuff()
-
         //Check availability of core sensor for app to function in users phone
         sensorsAvailabilityCheck()
 
-        //from home screen moves to sensor stuff
-        sensorStuff()
+        //shows login or registration page
+        register_loginStuff()
+
 
     }
 
@@ -79,17 +70,13 @@ class MainActivity : ComponentActivity(){
         if (islistening) {
             sensors.registerListeners()
         }
-
-        if (!islistening) {
-            sensors.unregisterListeners()
-        }
     }
 
     override fun onPause() {
         super.onPause()
         //make this redundant once all the functions are built because
         //the sensors are supposed to be active while the user prays putting app in background
-        sensors.unregisterListeners()
+//        sensors.unregisterListeners()
     }
 
 
@@ -99,8 +86,21 @@ class MainActivity : ComponentActivity(){
     }
 
     fun sensorsAvailabilityCheck() {
-        if (!sensors.availabilityOfSensors()) {
+        //Sensors from sensor manager
+        val linearaccSensor: Sensor? = mSensorManager.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION)
+        val gyroscopeSensor: Sensor? = mSensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE)
+        //Check availability of sensors
+        val hasLinearAcc = !(linearaccSensor == null)
+        val hasGyroscope = !(gyroscopeSensor == null)
+
+        val hasCrucialSensors:Boolean =
+            hasLinearAcc
+            && hasGyroscope
+
+        if (!hasCrucialSensors){
             setContentView(bindingmissingsensor.root)
+            MyUtils.showToast(this,"Has gyroscope manager $hasGyroscope")
+            MyUtils.showToast(this,"Has Accelerometer manager $hasLinearAcc")
         }
     }
     fun register_loginStuff(){
@@ -147,7 +147,7 @@ class MainActivity : ComponentActivity(){
                 if (userDetails_DB.pass == pass_entered){
                     MyUtils.showToast(this,"Login success")
                     //shows home screen for the user
-                    homeStuff(userDetails_DB.name)
+                    homeStuff(userDetails_DB)
                 }else MyUtils.showToast(this,"Password does not match")
             } else MyUtils.showToast(this,"Email not found")
         }
@@ -172,12 +172,32 @@ class MainActivity : ComponentActivity(){
 
     }
 
-    fun homeStuff(name:String){
 
+    fun homeStuff(userDetails:User){
+        //only for testing
+//        db.checkdb()
         setContentView(bindinghome.root)
 
-        bindinghome.tvWelcomeUser.text = "As-Salaam-Alaikum $name 😁,\nWelcome back to Prayer Captious App!"
-
+        //calling sensor with correct logged user details
+        sensors = sensors(
+            mSensorManager,
+            userDetails,
+            db,
+            binding.xGyroscope,
+            binding.yGyroscope,
+            binding.zGyroscope,
+            binding.xLinearAcc,
+            binding.yLinearAcc,
+            binding.zLinearAcc,
+            binding.gyroGraph,
+            binding.linearaccGraph,
+            binding.shakeAcceleration,
+            binding.shakeMeter,
+            binding.tvTimestamp
+        )
+        bindinghome.tvWelcomeUser.text =
+            "As-Salaam-Alaikum ${userDetails.name} 😁," +
+            "\nWelcome back to Prayer Captious App!"
         val countdown = object : CountDownTimer(3000, 1000) {
 
             override fun onTick(millisUntilFinished: Long) {
@@ -186,8 +206,8 @@ class MainActivity : ComponentActivity(){
 
             override fun onFinish() {
                 setContentView(binding.root)
-                sensors.registerListeners()
                 islistening=true
+                sensorStuff()
             }
         }
 
@@ -203,6 +223,7 @@ class MainActivity : ComponentActivity(){
     }
 
     fun sensorStuff(){
+
         //plots data real time and separates xyz axis by color
         sensors.plotSeriesData()
         sensors.seriesColour()
@@ -217,10 +238,23 @@ class MainActivity : ComponentActivity(){
 
         binding.btnStartDataCollection.setOnClickListener(){
             sensors.registerListeners()
+
         }
 
+        binding.btnResetGraphData.setOnClickListener(){
+            sensors.resetGraphData()
+        }
 
+        //initial prayer motion
+        binding.tvPrayerMotion.text = sensors.prayerMotion()
+
+        //after clicking to change motion
+        binding.overlayButton.setOnClickListener(){
+            binding.tvPrayerMotion.text = sensors.prayerMotion()
+        }
     }
+
+
 
 
     fun useful_classes_services(){
@@ -228,24 +262,6 @@ class MainActivity : ComponentActivity(){
         //getting sensor service as SensorManager
         // activating all required sensors in sensor class from SENSOR_SERVICE
         mSensorManager = getSystemService(Context.SENSOR_SERVICE) as SensorManager
-
-        //sensor class collects sensor x,y,z data and plots sensor data
-        sensors = sensors(
-            this,
-            mSensorManager,
-            binding.xGyroscope,
-            binding.yGyroscope,
-            binding.zGyroscope,
-            binding.xLinearAcc,
-            binding.yLinearAcc,
-            binding.zLinearAcc,
-            binding.gyroGraph,
-            binding.linearaccGraph,
-            binding.shakeAcceleration,
-            binding.shakeMeter,
-            binding.tvTimestamp,
-            binding.tvPressureData
-            )
 
         //Verifies data entered in registration boxes
         register = VerifyRegistratoin(

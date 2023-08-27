@@ -1,12 +1,12 @@
 package com.example.prayercaptious.android
 
-class GyroSensorData(
+class LinearaccSensorData(
     var userID: Int? = 0, //main acitvity -> sensor
     var prayerID: Int = 0, //sensor
     var timeStamp: String = "", //sensor can be figured later
-    var xGyro: Double = 0.0, //sensor
-    var yGyro: Double = 0.0, //sensor
-    var zGyro: Double = 0.0, //sensor
+    var xLinAcc: Double = 0.0, //sensor
+    var yLinAcc: Double = 0.0, //sensor
+    var zLinAcc: Double = 0.0, //sensor
     var motion: String = "" //sensor
 ) {
 

@@ -1,7 +1,5 @@
 package com.example.prayercaptious.android
 
-import android.content.Context
-import android.content.pm.PackageManager
 import android.graphics.Color
 import android.hardware.Sensor
 import android.hardware.SensorEvent
@@ -9,17 +7,16 @@ import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import android.os.Build
 import android.util.Log
+import android.widget.Button
 import android.widget.ProgressBar
 import android.widget.TextView
 import androidx.annotation.RequiresApi
-import com.example.prayercaptious.android.databinding.RegistrationLoginBinding
 import com.jjoe64.graphview.GraphView
 import com.jjoe64.graphview.series.DataPoint
 import com.jjoe64.graphview.series.LineGraphSeries
 import java.time.Instant
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
-import kotlin.math.round
 
 
 //Collect data of specific sensors: x,y,z axis of gyroscope, linear acceleration
@@ -39,12 +36,9 @@ import kotlin.math.round
 // class function : gyroscopeData , linearaccData
 // class function : gyroscopeGraph , linearaccData
 open class sensors(
-    var context: Context,
     var mSensorManager: SensorManager,
-//    var packageManager: PackageManager,
-//    var gyroscopeSensor: Sensor?,
-//    var linearaccSensor: Sensor?,
-//    var magneticSensor:Sensor?,
+    var user:User,
+    val db:SQLliteDB,
     var x_g: TextView,
     var y_g: TextView,
     var z_g: TextView,
@@ -55,13 +49,12 @@ open class sensors(
     var graphla: GraphView,
     var shakemeteracc: TextView,
     var shakemeter: ProgressBar,
-    var timestamp: TextView,
-    var pressureData: TextView
+    var timestamp: TextView
 ): SensorEventListener {
+
     //Sensors from sensor manager
     val linearaccSensor:Sensor? = mSensorManager.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION)
     val gyroscopeSensor:Sensor? = mSensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE)
-    val magneticfieldSensor:Sensor? = mSensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD)
 
     //shake meter acceleration calculation stuff
     private var currentAcceleration: Double = 0.0
@@ -98,25 +91,18 @@ open class sensors(
     private var maxplots_gyro: Int = 20000
     private var maxplots_linearacc: Int = 20000
 
-    fun availabilityOfSensors():Boolean{
-        //Check availability of sensors
-        val hasLinearAcc = !(linearaccSensor == null)
-        val hasGyroscope = !(gyroscopeSensor == null)
-        val hasMageticField = !(magneticfieldSensor == null)
-        val hasCrucialSensors:Boolean =
-            hasLinearAcc
-            && hasGyroscope
-            && hasMageticField
+    //prayer motion
+    private val motions: ArrayList<String> = arrayListOf("qiyam","ruku","sajdah","tashahhud")
+    private var motion_num: Int = 0
+    private var current_motion: String = ""
+    private var collectData:Boolean = false
+    private var resetPressed:Boolean = false
+    private var prayerid:Int = 0
+    private var prayeridInitialized:Boolean = false
 
-        if (!hasCrucialSensors){
-            MyUtils.showToast(context,"Has gyroscope manager $hasGyroscope")
-            MyUtils.showToast(context,"Has Accelerometer manager $hasLinearAcc")
-            MyUtils.showToast(context,"Has Magnetic field manager $hasMageticField")
-        }
-        return hasCrucialSensors
 
-    }
-
+    private var gyroDataDB:GyroSensorData = GyroSensorData()
+    private var linaccDataDB: LinearaccSensorData = LinearaccSensorData()
     fun registerListeners(){
 
         //  registering linear accleration sensor
@@ -125,6 +111,7 @@ open class sensors(
             this,
             linearaccSensor,
             SensorManager.SENSOR_DELAY_GAME,
+//            SensorManager.SENSOR_DELAY_NORMAL,
             SensorManager.SENSOR_DELAY_NORMAL
         )
         //  registering gyroscope
@@ -133,20 +120,17 @@ open class sensors(
             this,
             gyroscopeSensor,
             SensorManager.SENSOR_DELAY_GAME,
+//            SensorManager.SENSOR_DELAY_NORMAL,
             SensorManager.SENSOR_DELAY_NORMAL
         )
 
-//          registering magnetic sensor
-        mSensorManager.registerListener(
-            this,
-            magneticfieldSensor,
-            SensorManager.SENSOR_DELAY_GAME,
-            SensorManager.SENSOR_DELAY_NORMAL
-        )
+        collectData = true
     }
 
     fun unregisterListeners(){
         mSensorManager.unregisterListener(this)
+        collectData = false
+        db.close()
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
@@ -158,11 +142,12 @@ open class sensors(
             linearaccData(event)
         }
 
-        if (event?.sensor?.type == Sensor.TYPE_MAGNETIC_FIELD){
-            magneticData(event)
+        //Initializing prayerId for data collection
+        if (!prayeridInitialized) {
+            initializePrayerID()
         }
 
-        TimeStamp()
+        timeStamp()
     }
 
     override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {
@@ -170,34 +155,21 @@ open class sensors(
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
-    fun TimeStamp(){
+    fun timeStamp():String{
         val timestamp = DateTimeFormatter
             .ofPattern("dd-MM-yyyy HH:mm:ss.SSSSSS")
             .withZone(ZoneOffset.UTC)
             .format(Instant.now())
-        this.timestamp.text = ("DataTimeStampGyro/linearacc: ${timestamp.toString()}")
+        this.timestamp.text = ("DataTimeStampGyro/linearacc: $timestamp\nPrayerID: $prayerid")
+        return timestamp
     }
 
-    fun magneticData(event:SensorEvent?){
-
-        var xm: Float = event!!.values[0]
-        val ym: Float = event.values[1]
-        val zm: Float = event.values[2]
-
-        val x:Double = String.format("%.2f", xm).toDouble()
-        val y:Double = String.format("%.2f", ym).toDouble()
-        val z:Double = String.format("%.2f", zm).toDouble()
-
-        pressureData.text = (
-                "\txmagnetic:$x" +
-                "\n\tymagnetic:$y" +
-                "\n\tzmagnetic:$z")
-    }
     //gyroData:
     //  1) Extracts x,y,z values of gyroscope sensor
     //  2) Appends x,y,z values of gyroscope data real time into series of data
     //  3) Updates text label of x,y,z
     //  4) Adds shake meter progressbar and shows shake acceleration
+    @RequiresApi(Build.VERSION_CODES.O)
     private fun gyroData(event: SensorEvent?){
 
         var xg: Float = event!!.values[0]
@@ -209,12 +181,33 @@ open class sensors(
         val z:Double = String.format("%.2f", zg).toDouble()
 
 
+        if (collectData) {
+
+            gyroDataDB.prayerID = prayerid
+
+            Log.d(
+                "myTag", "userid: ${gyroDataDB.userID}" +
+                        "\tprayerid: ${gyroDataDB.prayerID}" +
+                        "\ttimestamp: ${timeStamp()}" +
+                        "\txg: $x\tyg: $y\tzg: $z" +
+                        "\tmotion: ${current_motion}"
+            )
+            val insertGyroData= GyroSensorData(user.id,prayerid,timeStamp(),x,y,z,current_motion)
+            db.insertGyroData(insertGyroData)
+        }
+
+        //New prayer collection starts with +1 prayerId
+        if (resetPressed) {
+            resetPressed()
+        }
 
         appendGyroData(x,y,z)
 
         updateTextAndColourGyro(x,y,z)
 
         shakeMeter(x,y,z)
+
+
     }
 
     private fun appendGyroData(x:Double,y:Double,z:Double){
@@ -223,6 +216,7 @@ open class sensors(
             resetGraph(gyroXseries,gyroYseries,gyroZseries,graphg)
             pointsplottedGyro=0.0
         }
+
         //points plotted is x axis
         pointsplottedGyro+=1.0
 
@@ -242,6 +236,7 @@ open class sensors(
     //  2) Appends x,y,z values of linear acceleration data real time into series of data
     //  3) Updates text label of x,y,z
     //  4) Adds shake meter progressbar and shows shake acceleration
+    @RequiresApi(Build.VERSION_CODES.O)
     private fun linearaccData(event: SensorEvent?){
 
         val xla: Float = event!!.values[0]
@@ -252,7 +247,25 @@ open class sensors(
         val y:Double = String.format("%.2f", yla).toDouble()
         val z:Double = String.format("%.2f", zla).toDouble()
 
+        if (collectData) {
 
+            linaccDataDB.prayerID = prayerid
+
+            Log.d(
+                "myTag", "userid: ${linaccDataDB.userID}" +
+                        "\tprayerid: ${linaccDataDB.prayerID}" +
+                        "\ttimestamp: ${timeStamp()}" +
+                        "\txla: $x\tyla: $y\tzla: $z" +
+                        "\tmotion: ${current_motion}"
+            )
+            val insertLinearaccSensorData= LinearaccSensorData(user.id,prayerid,timeStamp(),x,y,z,current_motion)
+            db.insertLinAccData(insertLinearaccSensorData)
+        }
+
+        //New prayer collection starts with +1 prayerId
+        if (resetPressed) {
+            resetPressed()
+        }
 
         appendLinearaccData(x,y,z)
 
@@ -295,8 +308,8 @@ open class sensors(
 
     fun graphSettings(graph:GraphView){
         graph.viewport.isScrollable = true
-        graph.viewport.setMaxY(10.0)
-        graph.viewport.setMinY(-10.0)
+        graph.viewport.setMaxY(12.0)
+        graph.viewport.setMinY(-12.0)
         graph.viewport.setMaxX(pointsplottedGyro)
         graph.viewport.setMinX(pointsplottedGyro-200)
         graph.viewport.isXAxisBoundsManual = true
@@ -336,10 +349,11 @@ open class sensors(
         z_la.text = ("z_lin_acc = $z")
         z_la.setTextColor(Color.parseColor("#FFFF00")) //yellow
     }
-    private fun resetGraph(seriesx: LineGraphSeries<DataPoint>,
-                           seriesy: LineGraphSeries<DataPoint>,
-                           seriesz: LineGraphSeries<DataPoint>,
-                           graph: GraphView
+    private fun resetGraph(
+       seriesx: LineGraphSeries<DataPoint>,
+       seriesy: LineGraphSeries<DataPoint>,
+       seriesz: LineGraphSeries<DataPoint>,
+       graph: GraphView
     ){
         //remove full visual graph plots
         graph.removeAllSeries()
@@ -353,22 +367,55 @@ open class sensors(
         graph.addSeries(seriesx)
         graph.addSeries(seriesy)
         graph.addSeries(seriesz)
+
+        resetPressed = true
     }
 
     private fun shakeMeter(x:Double,y:Double,z:Double){
         currentAcceleration= Math.sqrt((x*x+y*y+z*z).toDouble())
         deltaAcceleration = Math.abs(currentAcceleration-previousAcceleration)*10
         previousAcceleration = currentAcceleration
-        shakemeteracc.text = ("Rotate/Moving delta acceleration = ${deltaAcceleration.toInt()}")
+        shakemeteracc.text = ("Welcome ${user.name}\nRotate/Moving delta acceleration = ${deltaAcceleration.toInt()}")
         shakemeter.setProgress(deltaAcceleration.toInt())
     }
 
-    fun gyroDataDB(x:Double,y:Double,z:Double){
+    fun resetGraphData(){
+        resetGraph(linearaccXseries,linearaccYseries,linearaccZseries,graphla)
+        pointsplottedLinearacc=0.0
+        resetGraph(gyroXseries,gyroYseries,gyroZseries,graphg)
+        pointsplottedGyro=0.0
 
     }
 
-    fun linearaccDataDB(x:Double,y:Double,z:Double){
+    fun prayerMotion():String{
+        if (motion_num < motions.size){
+            current_motion = motions[motion_num]
+            motion_num += 1
+        }
+        else{
+            motion_num = 0
+            current_motion = motions[motion_num]
+            motion_num += 1
+        }
 
+        return current_motion
+
+    }
+
+    fun initializePrayerID(){
+
+        //+1 to ensure last prayerid is not used to collect data
+        prayerid = db.getPrayerID(user)+1
+        gyroDataDB.userID = user.id
+        linaccDataDB.userID = user.id
+        gyroDataDB.prayerID = prayerid
+        linaccDataDB.prayerID = prayerid
+        prayeridInitialized = true
+
+    }
+    fun resetPressed(){
+        prayerid+=1
+        resetPressed = false
     }
 
 

@@ -6,14 +6,13 @@ import android.database.Cursor
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 import android.util.Log
-import androidx.core.content.contentValuesOf
 
 class SQLliteDB(
     context:Context,
     ): SQLiteOpenHelper(context, DATABASENAME,null, VERSION) {
 
     companion object{
-        private val DATABASENAME:String = "pcDB"
+        private val DATABASENAME:String = "paDB"
         private val VERSION:Int = 1
 
         // Tables
@@ -55,8 +54,8 @@ class SQLliteDB(
                 + COL_X_GYRO+" DOUBLE,"
                 + COL_Y_GYRO+" DOUBLE,"
                 + COL_Z_GYRO+" DOUBLE,"
-                + COL_MOTION+" VARCHAR(10)"
-                + " FOREIGN KEY($COL_USER_ID)"
+                + COL_MOTION+" VARCHAR(10),"
+                + " FOREIGN KEY ($COL_USER_ID)"
                 + " REFERENCES $TABLE_USER ($COL_USER_ID) ON UPDATE CASCADE ON DELETE CASCADE"
                 + ");"
                 )
@@ -68,19 +67,27 @@ class SQLliteDB(
                 + COL_X_LINACC+" DOUBLE,"
                 + COL_Y_LINACC+" DOUBLE,"
                 + COL_Z_LINACC+" DOUBLE,"
-                + COL_MOTION+" VARCHAR(10)"
-                + " FOREIGN KEY($COL_USER_ID)"
+                + COL_MOTION+" VARCHAR(10),"
+                + " FOREIGN KEY ($COL_USER_ID)"
                 + " REFERENCES $TABLE_USER ($COL_USER_ID) ON UPDATE CASCADE ON DELETE CASCADE"
                 +");"
                 )
+
         //Creating user table :)
         db?.execSQL(createUserTable)
-//        db?.execSQL(createGyroscopeTable)
-//        db?.execSQL(createLinAccTable)
+        db?.execSQL(createGyroscopeTable)
+        db?.execSQL(createLinAccTable)
+
+        //Enabling foreign key support
+        db?.setForeignKeyConstraintsEnabled(true)
     }
 
     override fun onUpgrade(db: SQLiteDatabase?, oldVersion: Int, newVersion: Int) {
-        TODO("Not yet implemented")
+    }
+
+    override fun onConfigure(db: SQLiteDatabase?) {
+        super.onConfigure(db)
+        db?.setForeignKeyConstraintsEnabled(true)
     }
 
     //Inserting data into DB
@@ -152,6 +159,7 @@ class SQLliteDB(
         user.email = null
         user.pass = null
         if (cursor.moveToFirst()) {
+            user.id = cursor.getInt(cursor.getColumnIndex(COL_USER_ID).toInt())
             user.email = cursor.getString(cursor.getColumnIndex(COL_EMAIL).toInt())
             user.pass = cursor.getString(cursor.getColumnIndex(COL_PASSWORD).toInt())
             user.name = cursor.getString(cursor.getColumnIndex(COL_NAME).toInt())
@@ -159,6 +167,75 @@ class SQLliteDB(
         db.close()
         cursor.close()
         return user
+    }
+
+    fun getPrayerID(user:User):Int{
+        val db = this.readableDatabase
+        val gyroPrayerIDQuery = "SELECT MAX($COL_PRAYER_ID) AS $COL_PRAYER_ID FROM $TABLE_GYRO WHERE $COL_USER_ID = ${user.id}"
+        val cursor:Cursor = db.rawQuery(gyroPrayerIDQuery,null)
+
+        //if there are no prayer id associated with the user
+        var prayerID= 0
+
+        //get the maximum prayer id associated with the user
+        if (cursor.moveToFirst()){
+            prayerID = cursor.getInt(cursor.getColumnIndex(COL_PRAYER_ID).toInt())
+        }
+
+        return prayerID
+    }
+
+    fun insertGyroData(gyroData: GyroSensorData):Boolean{
+        val db = this.writableDatabase
+//        val query = "INSERT INTO $TABLE_USER ($COL_NAME,$COL_EMAIL,$COL_PASSWORD) VALUES('${user.name}','${user.email}','${user.pass}');"
+        val cv = ContentValues()
+        cv.put(COL_USER_ID,gyroData.userID)
+        cv.put(COL_PRAYER_ID, gyroData.prayerID)
+        cv.put(COL_TIMESTAMP, gyroData.timeStamp)
+        cv.put(COL_X_GYRO, gyroData.xGyro)
+        cv.put(COL_Y_GYRO, gyroData.yGyro)
+        cv.put(COL_Z_GYRO, gyroData.zGyro)
+        cv.put(COL_MOTION, gyroData.motion)
+
+
+        val result = db.insert(TABLE_GYRO,null, cv)
+        // if result is -1 than some error has occured
+        return result == (-1).toLong()
+    }
+
+    fun insertLinAccData(linaccData: LinearaccSensorData):Boolean{
+        val db = this.writableDatabase
+        val cv = ContentValues()
+        cv.put(COL_USER_ID,linaccData.userID)
+        cv.put(COL_PRAYER_ID, linaccData.prayerID)
+        cv.put(COL_TIMESTAMP, linaccData.timeStamp)
+        cv.put(COL_X_LINACC, linaccData.xLinAcc)
+        cv.put(COL_Y_LINACC, linaccData.yLinAcc)
+        cv.put(COL_Z_LINACC, linaccData.zLinAcc)
+        cv.put(COL_MOTION, linaccData.motion)
+
+
+        val result = db.insert(TABLE_LINACC,null, cv)
+        // if result is -1 than some error has occured
+        return result == (-1).toLong()
+    }
+
+    fun foreign_enabled(){
+        val db = this.readableDatabase
+        val cursor = db.rawQuery("PRAGMA foreign_keys;", null)
+
+        if (cursor.moveToFirst()) {
+            val foreignKeyStatus = cursor.getInt(0) // Index 0 corresponds to the result of PRAGMA foreign_keys
+            if (foreignKeyStatus == 1) {
+                Log.d("myTag","Foreign key constraints are enabled")
+            } else {
+                // Foreign key constraints are disabled
+                Log.d("myTag","Foreign key constraints are disabled.")
+            }
+        }
+
+        cursor.close()
+        db.close()
     }
 
 }
