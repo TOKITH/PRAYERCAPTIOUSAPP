@@ -131,22 +131,51 @@
             android:layout_weight="1"/>
     </LinearLayout>
 <!--    End of Linear acceleration text view stuff-->
-    <Button
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:id="@+id/btn_stop_data_collection"
-        android:text="@string/stopdatacollection"/>
-    <Button
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:id="@+id/btn_start_data_collection"
-        android:text="@string/startdatacollection"/>
+        android:layout_marginTop="10sp"
+        android:orientation="horizontal"
+        android:weightSum="2">
 
     <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/btn_start_data_collection"
+        android:text="@string/startdatacollection"
+        android:layout_weight="1"/>
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/btn_stop_data_collection"
+        android:text="@string/stopdatacollection"
+        android:layout_weight="1"/>
+
+    </LinearLayout>
+
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:weightSum="2">
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id ="@+id/btn_delete_current_data"
+        android:text= "@string/deleteCurrentData"
+        android:layout_weight="1"/>
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
         android:id="@+id/btn_reset_graph_data"
-        android:text="@string/resetgraph"/>
+        android:text="@string/resetgraph"
+        android:layout_weight="1"/>
+
+
+    </LinearLayout>
 
 </LinearLayout>
 

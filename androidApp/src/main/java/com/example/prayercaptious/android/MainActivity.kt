@@ -242,7 +242,14 @@ class MainActivity : ComponentActivity(){
         }
 
         binding.btnResetGraphData.setOnClickListener(){
+//            sensors.unregisterListeners()
             sensors.resetGraphData()
+        }
+
+        binding.btnDeleteCurrentData.setOnClickListener(){
+            sensors.unregisterListeners()
+            db.deleteCurrentDataCollected()
+            sensors.initializePrayerID()
         }
 
         //initial prayer motion

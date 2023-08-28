@@ -13,10 +13,12 @@
     <string name="xlinacc">x linear acc</string>
     <string name="ylinacc">y linear acc</string>
     <string name="zlinacc">z linear acc</string>
+    <string name="prayermotion">Prayer motion goes here</string>
     <string name="stopdatacollection">Stop data collection</string>
     <string name="startdatacollection">Start data collection</string>
     <string name="resetgraph">Reset graph data</string>
-    <string name="prayermotion">Prayer motion goes here</string>
+    <string name="deleteCurrentData">Delete Current Data</string>
+
 
     <!--Registration page-->
     <string name="register_page">Register Below 😄</string>

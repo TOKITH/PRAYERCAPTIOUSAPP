@@ -63,7 +63,7 @@ open class sensors(
 
 
     //gyrograph graph stuff
-    private var pointsplottedGyro: Double = 1.0
+    private var pointsplottedGyro: Double = 0.0
     private var gyroXseries: LineGraphSeries<DataPoint> = LineGraphSeries(arrayOf(
         DataPoint(0.0,0.0)
     ))
@@ -76,7 +76,7 @@ open class sensors(
 
     //linear acceleration stuff
 
-    private var pointsplottedLinearacc: Double = 1.0
+    private var pointsplottedLinearacc: Double = 0.0
     private var linearaccXseries: LineGraphSeries<DataPoint> = LineGraphSeries(arrayOf(
         DataPoint(0.0,0.0)
     ))
@@ -97,13 +97,17 @@ open class sensors(
     private var current_motion: String = ""
     private var collectData:Boolean = false
     private var resetPressed:Boolean = false
-    private var prayerid:Int = 0
+    private var prayerid:Int = 1
     private var prayeridInitialized:Boolean = false
 
 
     private var gyroDataDB:GyroSensorData = GyroSensorData()
     private var linaccDataDB: LinearaccSensorData = LinearaccSensorData()
     fun registerListeners(){
+        //Initializing prayerId for data collection
+        if (!prayeridInitialized) {
+            initializePrayerID()
+        }
 
         //  registering linear accleration sensor
         //  Sampling period is game with normal delay
@@ -135,16 +139,12 @@ open class sensors(
 
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onSensorChanged(event: SensorEvent?) {
+
         if (event?.sensor?.type == Sensor.TYPE_GYROSCOPE){
             gyroData(event)
         }
         if (event?.sensor?.type == Sensor.TYPE_LINEAR_ACCELERATION){
             linearaccData(event)
-        }
-
-        //Initializing prayerId for data collection
-        if (!prayeridInitialized) {
-            initializePrayerID()
         }
 
         timeStamp()
@@ -160,7 +160,7 @@ open class sensors(
             .ofPattern("dd-MM-yyyy HH:mm:ss.SSSSSS")
             .withZone(ZoneOffset.UTC)
             .format(Instant.now())
-        this.timestamp.text = ("DataTimeStampGyro/linearacc: $timestamp\nPrayerID: $prayerid")
+        this.timestamp.text = ("Data: $timestamp\nPrayerID: $prayerid")
         return timestamp
     }
 
@@ -172,7 +172,7 @@ open class sensors(
     @RequiresApi(Build.VERSION_CODES.O)
     private fun gyroData(event: SensorEvent?){
 
-        var xg: Float = event!!.values[0]
+        val xg: Float = event!!.values[0]
         val yg: Float = event.values[1]
         val zg: Float = event.values[2]
 
@@ -194,11 +194,6 @@ open class sensors(
             )
             val insertGyroData= GyroSensorData(user.id,prayerid,timeStamp(),x,y,z,current_motion)
             db.insertGyroData(insertGyroData)
-        }
-
-        //New prayer collection starts with +1 prayerId
-        if (resetPressed) {
-            resetPressed()
         }
 
         appendGyroData(x,y,z)
@@ -260,11 +255,6 @@ open class sensors(
             )
             val insertLinearaccSensorData= LinearaccSensorData(user.id,prayerid,timeStamp(),x,y,z,current_motion)
             db.insertLinAccData(insertLinearaccSensorData)
-        }
-
-        //New prayer collection starts with +1 prayerId
-        if (resetPressed) {
-            resetPressed()
         }
 
         appendLinearaccData(x,y,z)
@@ -367,8 +357,6 @@ open class sensors(
         graph.addSeries(seriesx)
         graph.addSeries(seriesy)
         graph.addSeries(seriesz)
-
-        resetPressed = true
     }
 
     private fun shakeMeter(x:Double,y:Double,z:Double){
@@ -380,6 +368,10 @@ open class sensors(
     }
 
     fun resetGraphData(){
+        // if there are data graph will reset otherwise will not
+        if (pointsplottedGyro!=0.0 && pointsplottedLinearacc!=0.0)
+            prayerid+=1
+        //resets data
         resetGraph(linearaccXseries,linearaccYseries,linearaccZseries,graphla)
         pointsplottedLinearacc=0.0
         resetGraph(gyroXseries,gyroYseries,gyroZseries,graphg)
@@ -412,10 +404,6 @@ open class sensors(
         linaccDataDB.prayerID = prayerid
         prayeridInitialized = true
 
-    }
-    fun resetPressed(){
-        prayerid+=1
-        resetPressed = false
     }
 
 

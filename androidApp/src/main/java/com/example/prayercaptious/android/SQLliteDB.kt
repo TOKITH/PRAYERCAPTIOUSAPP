@@ -238,4 +238,17 @@ class SQLliteDB(
         db.close()
     }
 
+    fun deleteCurrentDataCollected(){
+        val db = this.writableDatabase
+        val deleteCurrentGyroPrayerID = "DELETE FROM $TABLE_GYRO WHERE $COL_PRAYER_ID = (SELECT MAX($COL_PRAYER_ID) FROM $TABLE_GYRO);"
+        val deleteCurrentLinearAccPrayerID = "DELETE FROM $TABLE_LINACC WHERE $COL_PRAYER_ID = (SELECT MAX($COL_PRAYER_ID) FROM $TABLE_LINACC);"
+        val result_gyro = db?.execSQL(deleteCurrentGyroPrayerID)
+        val result_linacc = db?.execSQL(deleteCurrentLinearAccPrayerID)
+
+        Log.d("DBTag","DeleteResultGyro $result_gyro\nDeleteResultLinAcc $result_linacc")
+//        db.close()
+
+
+    }
+
 }
