@@ -6,6 +6,7 @@ import android.content.Context
 import android.service.autofill.UserData
 import android.util.Log
 import android.util.Patterns
+import java.text.DecimalFormat
 
 
 class VerifyRegistratoin(
@@ -13,20 +14,23 @@ class VerifyRegistratoin(
     var reg_email: EditText,
     var reg_pass: EditText,
     var reg_confirm_pass: EditText,
+    var reg_height:EditText
 )
 {
     fun verify_blank(context:Context): Boolean {
         if (!(reg_name.text.isNotEmpty()
                     && reg_email.text.isNotEmpty()
                     && reg_pass.text.isNotEmpty()
-                    && reg_confirm_pass.text.isNotEmpty())){
+                    && reg_confirm_pass.text.isNotEmpty())
+                    && reg_height.text.isNotEmpty()){
             MyUtils.showToast(context,"Please do not leave any form blank")
         }
 
         return (reg_name.text.isNotEmpty()
                 && reg_email.text.isNotEmpty()
                 && reg_pass.text.isNotEmpty()
-                && reg_confirm_pass.text.isNotEmpty())
+                && reg_confirm_pass.text.isNotEmpty()
+                && reg_height.text.isNotEmpty())
     }
 
     fun verify_name(context: Context): Boolean{
@@ -50,6 +54,19 @@ class VerifyRegistratoin(
         }
 
         return (Patterns.EMAIL_ADDRESS.matcher(email).matches())
+    }
+
+    fun verify_height(context: Context): Boolean{
+        val height = reg_height.text.toString()
+        Log.d("myTag",height)
+        //1 digit and between 1 to 2 decimal place
+        val pattern = Regex("""^\d\.\d{1,2}$""")
+
+        if (!pattern.matches(height)) {
+            MyUtils.showToast(context,"Enter height in ft.inches format")
+        }
+
+        return pattern.matches(height)
     }
 
     fun verify_password(context: Context): Boolean{
@@ -87,6 +104,7 @@ class VerifyRegistratoin(
                         && this.verify_existing_user(context)
                         && this.verify_name(context)
                         && this.verify_email(context)
+                        && this.verify_height(context)
                         && this.verify_password(context)
                 )
 
@@ -98,5 +116,6 @@ class VerifyRegistratoin(
         reg_name.text.clear()
         reg_pass.text.clear()
         reg_confirm_pass.text.clear()
+        reg_height.text.clear()
     }
 }

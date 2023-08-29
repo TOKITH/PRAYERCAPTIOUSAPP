@@ -35,6 +35,14 @@
         android:inputType="textEmailAddress"/>
 
     <EditText
+        android:id="@+id/reg_height_et"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:hint="@string/height"
+        android:inputType="numberDecimal"/>
+
+    <EditText
         android:id="@+id/reg_pass_et"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"

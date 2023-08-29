@@ -5,15 +5,23 @@ import android.content.Context
 import android.database.Cursor
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
+import android.os.Environment
 import android.util.Log
+import java.io.File
+
 
 class SQLliteDB(
     context:Context,
-    ): SQLiteOpenHelper(context, DATABASENAME,null, VERSION) {
+    ): SQLiteOpenHelper(context, getDatabaseFilePath(context),null, VERSION) {
 
     companion object{
         private val DATABASENAME:String = "paDB"
         private val VERSION:Int = 1
+        // Function to get the custom database file path
+        private fun getDatabaseFilePath(context: Context): String {
+            val documentsDirectory = context.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS)
+            return File(documentsDirectory, DATABASENAME).absolutePath
+        }
 
         // Tables
         private val TABLE_USER = "dim_user"
@@ -25,6 +33,7 @@ class SQLliteDB(
         private val COL_NAME = "name"
         private val COL_EMAIL = "email"
         private val COL_PASSWORD = "password"
+        private val COL_HEIGHT = "height"
 
         // gyro/lin acc table columns
         private val COL_PRAYER_ID = "prayer_id"
@@ -43,6 +52,7 @@ class SQLliteDB(
         val createUserTable = ("CREATE TABLE IF NOT EXISTS "+ TABLE_USER+ " ("
                 + COL_USER_ID+" INTEGER PRIMARY KEY AUTOINCREMENT,"
                 + COL_NAME+" VARCHAR(255) NOT NULL,"
+                + COL_HEIGHT+" DOUBLE NOT NULL,"
                 + COL_EMAIL+" VARCHAR(255) NOT NULL,"
                 + COL_PASSWORD+" VARCHAR(255) NOT NULL"
                 +");"
@@ -97,6 +107,7 @@ class SQLliteDB(
         val cv = ContentValues()
         cv.put(COL_NAME, user.name)
         cv.put(COL_EMAIL, user.email)
+        cv.put(COL_HEIGHT,user.height)
         cv.put(COL_PASSWORD, user.pass)
 
         val result = db.insert(TABLE_USER,null, cv)
@@ -121,6 +132,7 @@ class SQLliteDB(
                 user.name = cursor.getString(cursor.getColumnIndex(COL_NAME).toInt())
                 user.email = cursor.getString(cursor.getColumnIndex(COL_EMAIL).toInt())
                 user.pass = cursor.getString(cursor.getColumnIndex(COL_PASSWORD).toInt())
+                user.height = cursor.getString(cursor.getColumnIndex(COL_HEIGHT).toInt()).toDouble()
                 UserDataList.add(user)
             }while (cursor.moveToNext())
         }

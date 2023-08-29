@@ -11,6 +11,7 @@ import com.example.prayercaptious.android.databinding.HomeScreenBinding
 import com.example.prayercaptious.android.databinding.NonFunctionalAppBinding
 import com.example.prayercaptious.android.databinding.RegistrationLoginBinding
 import com.example.prayercaptious.android.databinding.RegistrationPageBinding
+import java.text.DecimalFormat
 import kotlin.math.round
 
 
@@ -127,7 +128,8 @@ class MainActivity : ComponentActivity(){
                 val name = bindingregister.regNameEt.text.toString().trim()
                 val email = bindingregister.regEmailEt.text.toString().trim().lowercase()
                 val pass = bindingregister.regPassEt.text.toString().trim()
-                userData = User(name,email,pass)
+                val height = bindingregister.regHeightEt.text.toString().toDouble()
+                userData = User(name,email,pass,height)
                 if (!db.insertRegistrationUserData(userData)){
                     MyUtils.showToast(this,"Registration successful")
                     setContentView(bindinglogin.root)
@@ -155,12 +157,13 @@ class MainActivity : ComponentActivity(){
         //read or delete data
         bindinglogin.readDataBtn.setOnClickListener(){
             val data:MutableList<User> = db.readRegistrationUserData()
-            bindinglogin.databaseTv.text = "ID NAME EMAIL PASS\n"
+            bindinglogin.databaseTv.text = "ID NAME EMAIL HEIGHT PASS\n"
             for (i in 0 until data.size){
                 bindinglogin.databaseTv.append(
                     data[i].id.toString()+" "+
                             data[i].name+" "+
                             data[i].email+" "+
+                            data[i].height.toString()+" "+
                             data[i].pass+"\n"
                 )
             }
@@ -275,7 +278,8 @@ class MainActivity : ComponentActivity(){
             bindingregister.regNameEt,
             bindingregister.regEmailEt,
             bindingregister.regPassEt,
-            bindingregister.regConfirmPassEt
+            bindingregister.regConfirmPassEt,
+            bindingregister.regHeightEt
         )
 
         //Initalizing Database
