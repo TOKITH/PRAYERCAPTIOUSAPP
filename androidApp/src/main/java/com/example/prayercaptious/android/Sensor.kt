@@ -92,10 +92,10 @@ open class sensors(
     private var maxplots_linearacc: Int = 20000
 
     //prayer motion
-    private val motions: ArrayList<String> = arrayListOf("qiyam","ruku","sajdah","tashahhud")
+    private val motions: ArrayList<String> = arrayListOf("standing","bowing","prostrating","sitting")
     private var motion_num: Int = 0
     private var current_motion: String = ""
-    private var collectData:Boolean = false
+    private var collectData:Boolean = true
     private var resetPressed:Boolean = false
     private var prayerid:Int = 1
     private var prayeridInitialized:Boolean = false
@@ -129,11 +129,13 @@ open class sensors(
         )
 
         collectData = true
+        resetPressed = false
     }
 
     fun unregisterListeners(){
         mSensorManager.unregisterListener(this)
         collectData = false
+        resetPressed = true
         db.close()
     }
 
@@ -160,7 +162,7 @@ open class sensors(
             .ofPattern("dd-MM-yyyy HH:mm:ss.SSSSSS")
             .withZone(ZoneOffset.UTC)
             .format(Instant.now())
-        this.timestamp.text = ("Data: $timestamp\nPrayerID: $prayerid")
+        this.timestamp.text = ("Data: $timestamp\nPrayerID: $prayerid | userID: ${user.id}")
         return timestamp
     }
 
@@ -368,10 +370,11 @@ open class sensors(
     }
 
     fun resetGraphData(){
-        // if there are data graph will reset otherwise will not
-        if (pointsplottedGyro!=0.0 && pointsplottedLinearacc!=0.0)
-            prayerid+=1
-        //resets data
+        if (resetPressed) {
+            resetPressed= false
+            prayerid+= 1
+        }
+        //resets data --- make redundant once complete collection data.
         resetGraph(linearaccXseries,linearaccYseries,linearaccZseries,graphla)
         pointsplottedLinearacc=0.0
         resetGraph(gyroXseries,gyroYseries,gyroZseries,graphg)
@@ -403,6 +406,16 @@ open class sensors(
         gyroDataDB.prayerID = prayerid
         linaccDataDB.prayerID = prayerid
         prayeridInitialized = true
+
+    }
+
+    fun deleteCurrentData(){
+        db.deleteCurrentDataCollected(user.id,prayerid)
+        //resets data -- make redundant once complete collection data.
+        resetGraph(linearaccXseries,linearaccYseries,linearaccZseries,graphla)
+        pointsplottedLinearacc=0.0
+        resetGraph(gyroXseries,gyroYseries,gyroZseries,graphg)
+        pointsplottedGyro=0.0
 
     }
 

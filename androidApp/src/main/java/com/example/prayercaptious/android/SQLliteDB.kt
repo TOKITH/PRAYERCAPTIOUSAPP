@@ -24,27 +24,27 @@ class SQLliteDB(
         }
 
         // Tables
-        private val TABLE_USER = "dim_user"
-        private val TABLE_GYRO = "gyroscope"
-        private val TABLE_LINACC = "linear_acceleration"
+        private const val TABLE_USER = "dim_user"
+        private const val TABLE_GYRO = "gyroscope"
+        private const val TABLE_LINACC = "linear_acceleration"
 
         // user table columns
-        private val COL_USER_ID = "user_id"
-        private val COL_NAME = "name"
-        private val COL_EMAIL = "email"
-        private val COL_PASSWORD = "password"
-        private val COL_HEIGHT = "height"
+        private const val COL_USER_ID = "user_id"
+        private const val COL_NAME = "name"
+        private const val COL_EMAIL = "email"
+        private const val COL_PASSWORD = "password"
+        private const val COL_HEIGHT = "height"
 
         // gyro/lin acc table columns
-        private val COL_PRAYER_ID = "prayer_id"
-        private val COL_TIMESTAMP = "event_time"
-        private val COL_MOTION = "motion"
-        private val COL_X_GYRO = "x_gyro"
-        private val COL_Y_GYRO = "y_gyro"
-        private val COL_Z_GYRO = "z_gyro"
-        private val COL_X_LINACC = "x_linacc"
-        private val COL_Y_LINACC = "y_linacc"
-        private val COL_Z_LINACC = "z_linacc"
+        private const val COL_PRAYER_ID = "prayer_id"
+        private const val COL_TIMESTAMP = "event_time"
+        private const val COL_MOTION = "motion"
+        private const val COL_X_GYRO = "x_gyro"
+        private const val COL_Y_GYRO = "y_gyro"
+        private const val COL_Z_GYRO = "z_gyro"
+        private const val COL_X_LINACC = "x_linacc"
+        private const val COL_Y_LINACC = "y_linacc"
+        private const val COL_Z_LINACC = "z_linacc"
 
     }
 
@@ -250,10 +250,10 @@ class SQLliteDB(
         db.close()
     }
 
-    fun deleteCurrentDataCollected(){
+    fun deleteCurrentDataCollected(userid:Int,prayerid:Int){
         val db = this.writableDatabase
-        val deleteCurrentGyroPrayerID = "DELETE FROM $TABLE_GYRO WHERE $COL_PRAYER_ID = (SELECT MAX($COL_PRAYER_ID) FROM $TABLE_GYRO);"
-        val deleteCurrentLinearAccPrayerID = "DELETE FROM $TABLE_LINACC WHERE $COL_PRAYER_ID = (SELECT MAX($COL_PRAYER_ID) FROM $TABLE_LINACC);"
+        val deleteCurrentGyroPrayerID = "DELETE FROM $TABLE_GYRO WHERE $COL_PRAYER_ID = (SELECT MAX($COL_PRAYER_ID) FROM $TABLE_GYRO WHERE $COL_USER_ID =$userid);"
+        val deleteCurrentLinearAccPrayerID = "DELETE FROM $TABLE_LINACC WHERE $COL_PRAYER_ID = (SELECT MAX($COL_PRAYER_ID) FROM $TABLE_LINACC WHERE $COL_USER_ID =$userid);"
         val result_gyro = db?.execSQL(deleteCurrentGyroPrayerID)
         val result_linacc = db?.execSQL(deleteCurrentLinearAccPrayerID)
 

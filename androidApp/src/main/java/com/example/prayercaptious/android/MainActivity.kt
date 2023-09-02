@@ -69,15 +69,12 @@ class MainActivity : ComponentActivity(){
     override fun onResume() {
         super.onResume()
         if (islistening) {
-            sensors.registerListeners()
+            sensors.unregisterListeners()
         }
     }
 
     override fun onPause() {
         super.onPause()
-        //make this redundant once all the functions are built because
-        //the sensors are supposed to be active while the user prays putting app in background
-//        sensors.unregisterListeners()
     }
 
 
@@ -245,13 +242,13 @@ class MainActivity : ComponentActivity(){
         }
 
         binding.btnResetGraphData.setOnClickListener(){
-//            sensors.unregisterListeners()
+            sensors.unregisterListeners()
             sensors.resetGraphData()
         }
 
         binding.btnDeleteCurrentData.setOnClickListener(){
             sensors.unregisterListeners()
-            db.deleteCurrentDataCollected()
+            sensors.deleteCurrentData()
             sensors.initializePrayerID()
         }
 
