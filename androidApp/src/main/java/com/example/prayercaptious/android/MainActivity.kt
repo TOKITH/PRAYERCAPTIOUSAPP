@@ -264,7 +264,6 @@ class MainActivity : ComponentActivity(){
 
 
     fun useful_classes_services(){
-
         //getting sensor service as SensorManager
         // activating all required sensors in sensor class from SENSOR_SERVICE
         mSensorManager = getSystemService(Context.SENSOR_SERVICE) as SensorManager
