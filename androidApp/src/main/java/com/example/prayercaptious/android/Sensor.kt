@@ -135,7 +135,6 @@ open class sensors(
     fun unregisterListeners(){
         mSensorManager.unregisterListener(this)
         collectData = false
-        resetPressed = true
         db.close()
     }
 
@@ -370,9 +369,10 @@ open class sensors(
     }
 
     fun resetGraphData(){
-        if (resetPressed) {
-            resetPressed= false
+        if (collectData) {
+            this.unregisterListeners()
             prayerid+= 1
+            this.timestamp.text = ("PrayerID: $prayerid | userID: ${user.id}")
         }
         //resets data --- make redundant once complete collection data.
         resetGraph(linearaccXseries,linearaccYseries,linearaccZseries,graphla)
@@ -406,6 +406,7 @@ open class sensors(
         gyroDataDB.prayerID = prayerid
         linaccDataDB.prayerID = prayerid
         prayeridInitialized = true
+        this.timestamp.text = ("PrayerID: $prayerid | userID: ${user.id}")
 
     }
 
@@ -416,6 +417,7 @@ open class sensors(
         pointsplottedLinearacc=0.0
         resetGraph(gyroXseries,gyroYseries,gyroZseries,graphg)
         pointsplottedGyro=0.0
+
 
     }
 

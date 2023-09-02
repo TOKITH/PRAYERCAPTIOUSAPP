@@ -242,7 +242,6 @@ class MainActivity : ComponentActivity(){
         }
 
         binding.btnResetGraphData.setOnClickListener(){
-            sensors.unregisterListeners()
             sensors.resetGraphData()
         }
 
