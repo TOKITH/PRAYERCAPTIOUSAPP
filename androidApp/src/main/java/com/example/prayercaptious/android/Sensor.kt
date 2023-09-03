@@ -96,6 +96,7 @@ open class sensors(
     private var motion_num: Int = 0
     private var current_motion: String = ""
     private var collectData:Boolean = true
+    private var deleteCurrentData = false
     private var resetPressed:Boolean = false
     private var prayerid:Int = 1
     private var prayeridInitialized:Boolean = false
@@ -130,6 +131,7 @@ open class sensors(
 
         collectData = true
         resetPressed = false
+        deleteCurrentData = false
     }
 
     fun unregisterListeners(){
@@ -369,17 +371,30 @@ open class sensors(
     }
 
     fun resetGraphData(){
-        if (collectData) {
-            this.unregisterListeners()
+
+        if (!collectData && deleteCurrentData){
+            resetPressed = true
+        }
+
+        //resetting data while collecting a set of data
+        if (collectData){
             prayerid+= 1
-            this.timestamp.text = ("PrayerID: $prayerid | userID: ${user.id}")
+            this.unregisterListeners()
+            resetPressed = true
+        }
+
+        //incrementing prayer id by 1 while data collection is at pause
+        // and the number stays incremented by 1 until data collection starts again meaning pressing reset multiple times will not increment again
+        if (!collectData && !resetPressed){
+            prayerid+=1
+            resetPressed = true
         }
         //resets data --- make redundant once complete collection data.
         resetGraph(linearaccXseries,linearaccYseries,linearaccZseries,graphla)
         pointsplottedLinearacc=0.0
         resetGraph(gyroXseries,gyroYseries,gyroZseries,graphg)
         pointsplottedGyro=0.0
-
+        this.timestamp.text = ("PrayerID: $prayerid | userID: ${user.id}")
     }
 
     fun prayerMotion():String{
@@ -417,8 +432,7 @@ open class sensors(
         pointsplottedLinearacc=0.0
         resetGraph(gyroXseries,gyroYseries,gyroZseries,graphg)
         pointsplottedGyro=0.0
-
-
+        deleteCurrentData = true
     }
 
 
