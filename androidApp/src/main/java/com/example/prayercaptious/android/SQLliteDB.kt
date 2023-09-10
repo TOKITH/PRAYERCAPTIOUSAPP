@@ -193,7 +193,8 @@ class SQLliteDB(
         if (cursor.moveToFirst()){
             prayerID = cursor.getInt(cursor.getColumnIndex(COL_PRAYER_ID).toInt())
         }
-
+        cursor.close()
+        db.close()
         return prayerID
     }
 
@@ -211,6 +212,7 @@ class SQLliteDB(
 
 
         val result = db.insert(TABLE_GYRO,null, cv)
+        db.close()
         // if result is -1 than some error has occured
         return result == (-1).toLong()
     }
@@ -228,6 +230,7 @@ class SQLliteDB(
 
 
         val result = db.insert(TABLE_LINACC,null, cv)
+        db.close()
         // if result is -1 than some error has occured
         return result == (-1).toLong()
     }
@@ -252,13 +255,15 @@ class SQLliteDB(
 
     fun deleteCurrentDataCollected(userid:Int,prayerid:Int){
         val db = this.writableDatabase
-        val deleteCurrentGyroPrayerID = "DELETE FROM $TABLE_GYRO WHERE $COL_PRAYER_ID = (SELECT MAX($COL_PRAYER_ID) FROM $TABLE_GYRO WHERE $COL_USER_ID =$userid);"
-        val deleteCurrentLinearAccPrayerID = "DELETE FROM $TABLE_LINACC WHERE $COL_PRAYER_ID = (SELECT MAX($COL_PRAYER_ID) FROM $TABLE_LINACC WHERE $COL_USER_ID =$userid);"
+//        val deleteCurrentGyroPrayerID = "DELETE FROM $TABLE_GYRO WHERE $COL_USER_ID = $userid AND $COL_PRAYER_ID = $prayerid;"
+//        val deleteCurrentLinearAccPrayerID = "DELETE FROM $TABLE_LINACC WHERE $COL_USER_ID = $userid AND $COL_PRAYER_ID = $prayerid;"
+        val deleteCurrentGyroPrayerID = "DELETE FROM $TABLE_GYRO WHERE $COL_USER_ID = $userid AND $COL_PRAYER_ID = (SELECT MAX($COL_PRAYER_ID) FROM $TABLE_GYRO WHERE $COL_USER_ID = $userid);"
+        val deleteCurrentLinearAccPrayerID = "DELETE FROM $TABLE_LINACC WHERE $COL_USER_ID = $userid AND $COL_PRAYER_ID = (SELECT MAX($COL_PRAYER_ID) FROM $TABLE_LINACC WHERE $COL_USER_ID = $userid);"
         val result_gyro = db?.execSQL(deleteCurrentGyroPrayerID)
         val result_linacc = db?.execSQL(deleteCurrentLinearAccPrayerID)
 
         Log.d("DBTag","DeleteResultGyro $result_gyro\nDeleteResultLinAcc $result_linacc")
-//        db.close()
+        db.close()
 
 
     }

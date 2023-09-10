@@ -433,6 +433,7 @@ open class sensors(
         resetGraph(gyroXseries,gyroYseries,gyroZseries,graphg)
         pointsplottedGyro=0.0
         deleteCurrentData = true
+        this.timestamp.text = ("PrayerID: $prayerid | userID: ${user.id}")
     }
 
 
