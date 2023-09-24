@@ -38,13 +38,18 @@ class SQLliteDB(
         // gyro/lin acc table columns
         private const val COL_PRAYER_ID = "prayer_id"
         private const val COL_TIMESTAMP = "event_time"
-        private const val COL_MOTION = "motion"
         private const val COL_X_GYRO = "x_gyro"
         private const val COL_Y_GYRO = "y_gyro"
         private const val COL_Z_GYRO = "z_gyro"
         private const val COL_X_LINACC = "x_linacc"
         private const val COL_Y_LINACC = "y_linacc"
         private const val COL_Z_LINACC = "z_linacc"
+        private const val COL_MOTION = "motion"
+        private const val COL_PLACEMENT = "placement"
+        private const val COL_SIDE = "side"
+        private const val COL_ELEVATION = "elevation"
+
+
 
     }
 
@@ -52,7 +57,7 @@ class SQLliteDB(
         val createUserTable = ("CREATE TABLE IF NOT EXISTS "+ TABLE_USER+ " ("
                 + COL_USER_ID+" INTEGER PRIMARY KEY AUTOINCREMENT,"
                 + COL_NAME+" VARCHAR(255) NOT NULL,"
-                + COL_HEIGHT+" DOUBLE NOT NULL,"
+                + COL_HEIGHT+" VARCHAR(255) NOT NULL,"
                 + COL_EMAIL+" VARCHAR(255) NOT NULL,"
                 + COL_PASSWORD+" VARCHAR(255) NOT NULL"
                 +");"
@@ -65,6 +70,9 @@ class SQLliteDB(
                 + COL_Y_GYRO+" DOUBLE,"
                 + COL_Z_GYRO+" DOUBLE,"
                 + COL_MOTION+" VARCHAR(10),"
+                + COL_PLACEMENT+" VARCHAR(25),"
+                + COL_SIDE+" VARCHAR(10),"
+                + COL_ELEVATION+" VARCHAR(25),"
                 + " FOREIGN KEY ($COL_USER_ID)"
                 + " REFERENCES $TABLE_USER ($COL_USER_ID) ON UPDATE CASCADE ON DELETE CASCADE"
                 + ");"
@@ -78,6 +86,9 @@ class SQLliteDB(
                 + COL_Y_LINACC+" DOUBLE,"
                 + COL_Z_LINACC+" DOUBLE,"
                 + COL_MOTION+" VARCHAR(10),"
+                + COL_PLACEMENT+" VARCHAR(25),"
+                + COL_SIDE+" VARCHAR(10),"
+                + COL_ELEVATION+" VARCHAR(25),"
                 + " FOREIGN KEY ($COL_USER_ID)"
                 + " REFERENCES $TABLE_USER ($COL_USER_ID) ON UPDATE CASCADE ON DELETE CASCADE"
                 +");"
@@ -209,6 +220,9 @@ class SQLliteDB(
         cv.put(COL_Y_GYRO, gyroData.yGyro)
         cv.put(COL_Z_GYRO, gyroData.zGyro)
         cv.put(COL_MOTION, gyroData.motion)
+        cv.put(COL_PLACEMENT,gyroData.placement)
+        cv.put(COL_SIDE,gyroData.side)
+        cv.put(COL_ELEVATION,gyroData.elevation)
 
 
         val result = db.insert(TABLE_GYRO,null, cv)
@@ -227,6 +241,9 @@ class SQLliteDB(
         cv.put(COL_Y_LINACC, linaccData.yLinAcc)
         cv.put(COL_Z_LINACC, linaccData.zLinAcc)
         cv.put(COL_MOTION, linaccData.motion)
+        cv.put(COL_PLACEMENT,linaccData.placement)
+        cv.put(COL_SIDE,linaccData.side)
+        cv.put(COL_ELEVATION,linaccData.elevation)
 
 
         val result = db.insert(TABLE_LINACC,null, cv)

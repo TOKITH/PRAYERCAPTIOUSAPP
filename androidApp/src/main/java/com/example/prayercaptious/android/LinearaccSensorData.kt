@@ -7,7 +7,10 @@ class LinearaccSensorData(
     var xLinAcc: Double = 0.0, //sensor
     var yLinAcc: Double = 0.0, //sensor
     var zLinAcc: Double = 0.0, //sensor
-    var motion: String = "" //sensor
+    var motion: String = "", //sensor
+    var placement:String = "", //sensor
+    var side:String = "", //sensor
+    var elevation:String = "" //sensor
 ) {
 
 }

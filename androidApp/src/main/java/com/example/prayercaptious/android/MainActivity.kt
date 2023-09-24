@@ -5,6 +5,8 @@ import android.hardware.Sensor
 import android.hardware.SensorManager
 import android.os.Bundle
 import android.os.CountDownTimer
+import android.util.Log
+import android.widget.ArrayAdapter
 import androidx.activity.ComponentActivity
 import com.example.prayercaptious.android.databinding.ActivityMainBinding
 import com.example.prayercaptious.android.databinding.HomeScreenBinding
@@ -61,6 +63,7 @@ class MainActivity : ComponentActivity(){
 
         //shows login or registration page
         register_loginStuff()
+
 
 
     }
@@ -174,6 +177,7 @@ class MainActivity : ComponentActivity(){
 
 
     fun homeStuff(userDetails:User){
+        db.writableDatabase
         //only for testing
 //        db.checkdb()
         setContentView(bindinghome.root)
@@ -191,9 +195,11 @@ class MainActivity : ComponentActivity(){
             binding.zLinearAcc,
             binding.gyroGraph,
             binding.linearaccGraph,
-            binding.shakeAcceleration,
-            binding.shakeMeter,
-            binding.tvTimestamp
+            binding.tvTimestamp,
+            binding.spinnerPrayerMotion,
+            binding.actvPlacementAreaName,
+            binding.spinnerSide,
+            binding.spinnerPhoneElevation
         )
         bindinghome.tvWelcomeUser.text =
             "As-Salaam-Alaikum ${userDetails.name} 😁," +
@@ -237,6 +243,10 @@ class MainActivity : ComponentActivity(){
         }
 
         binding.btnStartDataCollection.setOnClickListener(){
+            sensors.initialise_motion()
+            sensors.initialise_elevation()
+            sensors.initialise_side()
+            sensors.initialise_placement()
             sensors.registerListeners()
 
         }
@@ -251,13 +261,6 @@ class MainActivity : ComponentActivity(){
             sensors.initializePrayerID()
         }
 
-        //initial prayer motion
-        binding.tvPrayerMotion.text = sensors.prayerMotion()
-
-        //after clicking to change motion
-        binding.overlayButton.setOnClickListener(){
-            binding.tvPrayerMotion.text = sensors.prayerMotion()
-        }
     }
 
 
@@ -267,6 +270,27 @@ class MainActivity : ComponentActivity(){
         //getting sensor service as SensorManager
         // activating all required sensors in sensor class from SENSOR_SERVICE
         mSensorManager = getSystemService(Context.SENSOR_SERVICE) as SensorManager
+
+        //initial prayer motion
+        val motion:List<String> = listOf("standing","bowing","prostrating","sitting")
+        val adapter_motion:ArrayAdapter<String> = ArrayAdapter<String>(this,android.R.layout.simple_dropdown_item_1line,motion)
+        binding.spinnerPrayerMotion.setAdapter(adapter_motion)
+
+        //Phone placement area name
+        val placement:List<String> = listOf("loose_","tight_","semi_")
+        val adapter_placement:ArrayAdapter<String> = ArrayAdapter<String>(this,android.R.layout.simple_dropdown_item_1line,placement)
+        binding.actvPlacementAreaName.setAdapter(adapter_placement)
+
+
+        //Choosing phone side
+        val side:List<String> = listOf("right","left")
+        val adapter_side:ArrayAdapter<String> = ArrayAdapter<String>(this,android.R.layout.simple_dropdown_item_1line,side)
+        binding.spinnerSide.adapter = adapter_side
+
+        //Choosing phone elevation
+        val elevation:List<String> = listOf("up_skin","down_skin","up_pocket","down_pocket")
+        val adapter_elevation:ArrayAdapter<String> = ArrayAdapter<String>(this,android.R.layout.simple_dropdown_item_1line,elevation)
+        binding.spinnerPhoneElevation.adapter = adapter_elevation
 
         //Verifies data entered in registration boxes
         register = VerifyRegistratoin(

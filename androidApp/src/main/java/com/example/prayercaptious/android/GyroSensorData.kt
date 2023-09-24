@@ -7,7 +7,11 @@ class GyroSensorData(
     var xGyro: Double = 0.0, //sensor
     var yGyro: Double = 0.0, //sensor
     var zGyro: Double = 0.0, //sensor
-    var motion: String = "" //sensor
+    var motion: String = "", //sensor
+    var placement:String = "", //sensor
+    var side:String = "", //sensor
+    var elevation:String = "" //sensor
+
 ) {
 
 }

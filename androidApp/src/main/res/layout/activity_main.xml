@@ -1,10 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!--For screen overlay and collection of data only (delete soon)-->
-<FrameLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="wrap_content"
-    android:layout_height="match_parent">
-
 <!-- Main layout (delete top and associate 1 Overlaybutton-->
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
@@ -16,24 +10,27 @@
     android:keepScreenOn="true"
     tools:context=".MainActivity">
 
-<!--    Start of Acceleration visualisation stuff-->
-    <TextView
-        android:id="@+id/shakeAcceleration"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/acceleration"
-        android:layout_gravity="left"
-        android:textSize="15sp"/>
-
-    <ProgressBar
-        android:id="@+id/shakeMeter"
-        android:layout_gravity="center"
+<!-- prayer motion and placement area-->
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        style="?android:attr/progressBarStyleHorizontal"
-        android:paddingBottom="20dp"
-        android:max="90"/>
-<!--    End of Acceleration visaulisation-->
+        android:orientation="horizontal"
+        android:weightSum="2">
+        <Spinner
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/spinner_prayer_motion"
+            android:text = "@string/prayermotion"
+            android:spinnerMode="dropdown"
+            android:layout_weight="1" />
+
+        <AutoCompleteTextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/actv_placement_area_name"
+            android:text = "@string/phonePlacement"
+            android:layout_weight="1"/>
+    </LinearLayout>
 
 <!--    Timer gyro-->
     <TextView
@@ -86,13 +83,31 @@
     </LinearLayout>
 <!--    End of Gyroscope stuff-->
 
-<!--    Prayer motion-->
-    <TextView
+<!--    Prayer motion, pocket side, phone elevation-->
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:id="@+id/tv_prayer_motion"
-        android:layout_marginBottom="5sp"
-        android:text = "@string/prayermotion"/>
+        android:orientation="horizontal"
+        android:weightSum="2">
+
+    <Spinner
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/spinner_side"
+        android:text = "@string/pocketSide"
+        android:spinnerMode="dropdown"
+        android:layout_weight="1"/>
+
+    <Spinner
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/spinner_phone_elevation"
+        android:text = "@string/phoneElevation"
+        android:spinnerMode="dropdown"
+        android:layout_weight="1"/>
+
+
+    </LinearLayout>
 
 <!--    Start of Linear acceleration graph view stuff-->
 
@@ -179,12 +194,3 @@
     </LinearLayout>
 
 </LinearLayout>
-
-    <Button
-        android:id="@+id/overlayButton"
-        android:layout_width="match_parent"
-        android:layout_height="75sp"
-        android:layout_gravity="top"
-        android:background="@drawable/overly_button_background"/>
-
-</FrameLayout>

@@ -1,5 +1,7 @@
 package com.example.prayercaptious.android
 
+import android.R
+import android.content.Context
 import android.graphics.Color
 import android.hardware.Sensor
 import android.hardware.SensorEvent
@@ -7,8 +9,11 @@ import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import android.os.Build
 import android.util.Log
+import android.widget.ArrayAdapter
+import android.widget.AutoCompleteTextView
 import android.widget.Button
 import android.widget.ProgressBar
+import android.widget.Spinner
 import android.widget.TextView
 import androidx.annotation.RequiresApi
 import com.jjoe64.graphview.GraphView
@@ -47,19 +52,16 @@ open class sensors(
     var z_la: TextView,
     var graphg: GraphView,
     var graphla: GraphView,
-    var shakemeteracc: TextView,
-    var shakemeter: ProgressBar,
-    var timestamp: TextView
+    var timestamp: TextView,
+    var motion: Spinner,
+    var placement: AutoCompleteTextView,
+    var side: Spinner,
+    var elevation: Spinner
 ): SensorEventListener {
 
     //Sensors from sensor manager
     val linearaccSensor:Sensor? = mSensorManager.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION)
     val gyroscopeSensor:Sensor? = mSensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE)
-
-    //shake meter acceleration calculation stuff
-    private var currentAcceleration: Double = 0.0
-    private var previousAcceleration: Double = 0.0
-    private var deltaAcceleration: Double = 0.0
 
 
     //gyrograph graph stuff
@@ -91,10 +93,6 @@ open class sensors(
     private var maxplots_gyro: Int = 20000
     private var maxplots_linearacc: Int = 20000
 
-    //prayer motion
-    private val motions: ArrayList<String> = arrayListOf("standing","bowing","prostrating","sitting")
-    private var motion_num: Int = 0
-    private var current_motion: String = ""
     private var collectData:Boolean = true
     private var deleteCurrentData = false
     private var resetPressed:Boolean = false
@@ -104,6 +102,13 @@ open class sensors(
 
     private var gyroDataDB:GyroSensorData = GyroSensorData()
     private var linaccDataDB: LinearaccSensorData = LinearaccSensorData()
+
+    //prayer motions and phone placements
+    private var current_motion: String = ""
+    private var current_placement:String = ""
+    private var current_side:String = ""
+    private var current_elevation = ""
+
     fun registerListeners(){
         //Initializing prayerId for data collection
         if (!prayeridInitialized) {
@@ -159,12 +164,12 @@ open class sensors(
 
     @RequiresApi(Build.VERSION_CODES.O)
     fun timeStamp():String{
-        val timestamp = DateTimeFormatter
+        val timestamps = DateTimeFormatter
             .ofPattern("dd-MM-yyyy HH:mm:ss.SSSSSS")
             .withZone(ZoneOffset.UTC)
             .format(Instant.now())
-        this.timestamp.text = ("Data: $timestamp\nPrayerID: $prayerid | userID: ${user.id}")
-        return timestamp
+        timestamp.text = ("Date: $timestamps\nPrayerID: $prayerid | userID: ${user.id}")
+        return timestamps
     }
 
     //gyroData:
@@ -189,21 +194,27 @@ open class sensors(
             gyroDataDB.prayerID = prayerid
 
             Log.d(
-                "myTag", "userid: ${gyroDataDB.userID}" +
+                "gyroData", "userid: ${gyroDataDB.userID}" +
                         "\tprayerid: ${gyroDataDB.prayerID}" +
                         "\ttimestamp: ${timeStamp()}" +
                         "\txg: $x\tyg: $y\tzg: $z" +
-                        "\tmotion: ${current_motion}"
+                        //alternative for realtime change
+//                        "\tmotion: ${initialise_motion()}" +
+//                        "\tplacement: ${initialise_placement()}" +
+//                        "\tside: ${initialise_side()}" +
+//                        "\televation: ${initialise_elevation()}"+
+                        "\tmotion: ${current_motion}" +
+                        "\tplacement: ${current_placement}" +
+                        "\tside: ${current_side}" +
+                        "\televation: ${current_elevation}"
             )
-            val insertGyroData= GyroSensorData(user.id,prayerid,timeStamp(),x,y,z,current_motion)
+            val insertGyroData= GyroSensorData(user.id,prayerid,timeStamp(),x,y,z,current_motion,current_placement,current_side,current_elevation)
             db.insertGyroData(insertGyroData)
         }
 
         appendGyroData(x,y,z)
 
         updateTextAndColourGyro(x,y,z)
-
-        shakeMeter(x,y,z)
 
 
     }
@@ -250,21 +261,22 @@ open class sensors(
             linaccDataDB.prayerID = prayerid
 
             Log.d(
-                "myTag", "userid: ${linaccDataDB.userID}" +
+                "linearData", "userid: ${linaccDataDB.userID}" +
                         "\tprayerid: ${linaccDataDB.prayerID}" +
                         "\ttimestamp: ${timeStamp()}" +
                         "\txla: $x\tyla: $y\tzla: $z" +
-                        "\tmotion: ${current_motion}"
+                        "\tmotion: ${current_motion}" +
+                        "\tplacement: ${current_placement}" +
+                        "\tside: ${current_side}" +
+                        "\televation: ${current_elevation}"
             )
-            val insertLinearaccSensorData= LinearaccSensorData(user.id,prayerid,timeStamp(),x,y,z,current_motion)
+            val insertLinearaccSensorData= LinearaccSensorData(user.id,prayerid,timeStamp(),x,y,z,current_motion,current_placement,current_side,current_elevation)
             db.insertLinAccData(insertLinearaccSensorData)
         }
 
         appendLinearaccData(x,y,z)
 
         updateTextAndColourLinearacc(x,y,z)
-
-        shakeMeter(x,y,z)
     }
 
     private fun appendLinearaccData(x:Double,y:Double,z:Double){
@@ -362,14 +374,6 @@ open class sensors(
         graph.addSeries(seriesz)
     }
 
-    private fun shakeMeter(x:Double,y:Double,z:Double){
-        currentAcceleration= Math.sqrt((x*x+y*y+z*z).toDouble())
-        deltaAcceleration = Math.abs(currentAcceleration-previousAcceleration)*10
-        previousAcceleration = currentAcceleration
-        shakemeteracc.text = ("Welcome ${user.name}\nRotate/Moving delta acceleration = ${deltaAcceleration.toInt()}")
-        shakemeter.setProgress(deltaAcceleration.toInt())
-    }
-
     fun resetGraphData(){
 
         if (!collectData && deleteCurrentData){
@@ -397,20 +401,6 @@ open class sensors(
         this.timestamp.text = ("PrayerID: $prayerid | userID: ${user.id}")
     }
 
-    fun prayerMotion():String{
-        if (motion_num < motions.size){
-            current_motion = motions[motion_num]
-            motion_num += 1
-        }
-        else{
-            motion_num = 0
-            current_motion = motions[motion_num]
-            motion_num += 1
-        }
-
-        return current_motion
-
-    }
 
     fun initializePrayerID(){
 
@@ -434,6 +424,28 @@ open class sensors(
         pointsplottedGyro=0.0
         deleteCurrentData = true
         this.timestamp.text = ("PrayerID: $prayerid | userID: ${user.id}")
+    }
+
+    fun initialise_motion():String{
+        current_motion = motion.selectedItem.toString()
+        return current_motion
+
+    }
+
+    fun initialise_placement():String{
+        current_placement = placement.text.toString()
+        return current_placement
+
+    }
+    fun initialise_side():String{
+        current_side = side.selectedItem.toString()
+        return current_side
+
+    }
+    fun initialise_elevation():String{
+        current_elevation = elevation.selectedItem.toString()
+        return current_elevation
+
     }
 
 

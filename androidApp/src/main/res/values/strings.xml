@@ -6,7 +6,6 @@
     <string name="countdown">3.0</string>
 
     <!--Activity main-->
-    <string name="acceleration">Shake acceleration</string>
     <string name="xgyro">x gyroscope</string>
     <string name="ygyro">y gyroscope</string>
     <string name="zgyro">z gyro</string>
@@ -18,6 +17,9 @@
     <string name="startdatacollection">Start data collection</string>
     <string name="resetgraph">Reset graph data</string>
     <string name="deleteCurrentData">Delete Current Data</string>
+    <string name="pocketSide">Side</string>
+    <string name="phoneElevation">Elevation</string>
+    <string name="phonePlacement">l</string>
 
 
     <!--Registration page-->
