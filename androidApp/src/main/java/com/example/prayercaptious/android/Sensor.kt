@@ -1,18 +1,14 @@
 package com.example.prayercaptious.android
 
-import android.R
-import android.content.Context
 import android.graphics.Color
 import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
+import android.opengl.Matrix
 import android.os.Build
 import android.util.Log
-import android.widget.ArrayAdapter
 import android.widget.AutoCompleteTextView
-import android.widget.Button
-import android.widget.ProgressBar
 import android.widget.Spinner
 import android.widget.TextView
 import androidx.annotation.RequiresApi
@@ -60,56 +56,84 @@ open class sensors(
 ): SensorEventListener {
 
     //Sensors from sensor manager
-    val linearaccSensor:Sensor? = mSensorManager.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION)
-    val gyroscopeSensor:Sensor? = mSensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE)
+    val linearaccSensor: Sensor? = mSensorManager.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION)
+    val gyroscopeSensor: Sensor? = mSensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE)
+    val rotationvectorSensor: Sensor? = mSensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR)
+    val magnometerSensor: Sensor? = mSensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD)
+    val acceleremetorSensor: Sensor? = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
 
+    //orientation values
+    var g_orientation_values: FloatArray = FloatArray(3)
+    var la_orientation_values: FloatArray = FloatArray(3)
+    var mf_orientation_values: FloatArray = FloatArray(3)
+    var am_orientation_values: FloatArray = FloatArray(3)
+    var orientationAngles:FloatArray = FloatArray(3)
+
+    //Adjusted values regardless phone orientation
+    var la_remapped_values: FloatArray = FloatArray(3)
+    var g_remapped_values:FloatArray = FloatArray(3)
+
+    //Matrix calculation placeholders
+    var rotationMatrix:FloatArray = FloatArray(9)
 
     //gyrograph graph stuff
     private var pointsplottedGyro: Double = 0.0
-    private var gyroXseries: LineGraphSeries<DataPoint> = LineGraphSeries(arrayOf(
-        DataPoint(0.0,0.0)
-    ))
-    private var gyroYseries: LineGraphSeries<DataPoint> = LineGraphSeries(arrayOf(
-        DataPoint(0.0,0.0)
-    ))
-    private var gyroZseries: LineGraphSeries<DataPoint> = LineGraphSeries(arrayOf(
-        DataPoint(0.0,0.0)
-    ))
+    private var gyroXseries: LineGraphSeries<DataPoint> = LineGraphSeries(
+        arrayOf(
+            DataPoint(0.0, 0.0)
+        )
+    )
+    private var gyroYseries: LineGraphSeries<DataPoint> = LineGraphSeries(
+        arrayOf(
+            DataPoint(0.0, 0.0)
+        )
+    )
+    private var gyroZseries: LineGraphSeries<DataPoint> = LineGraphSeries(
+        arrayOf(
+            DataPoint(0.0, 0.0)
+        )
+    )
 
     //linear acceleration stuff
 
     private var pointsplottedLinearacc: Double = 0.0
-    private var linearaccXseries: LineGraphSeries<DataPoint> = LineGraphSeries(arrayOf(
-        DataPoint(0.0,0.0)
-    ))
-    private var linearaccYseries: LineGraphSeries<DataPoint> = LineGraphSeries(arrayOf(
-        DataPoint(0.0,0.0)
-    ))
-    private var linearaccZseries: LineGraphSeries<DataPoint> = LineGraphSeries(arrayOf(
-        DataPoint(0.0,0.0)
-    ))
+    private var linearaccXseries: LineGraphSeries<DataPoint> = LineGraphSeries(
+        arrayOf(
+            DataPoint(0.0, 0.0)
+        )
+    )
+    private var linearaccYseries: LineGraphSeries<DataPoint> = LineGraphSeries(
+        arrayOf(
+            DataPoint(0.0, 0.0)
+        )
+    )
+    private var linearaccZseries: LineGraphSeries<DataPoint> = LineGraphSeries(
+        arrayOf(
+            DataPoint(0.0, 0.0)
+        )
+    )
 
     //reset graph to save memeory
     private var maxplots_gyro: Int = 20000
     private var maxplots_linearacc: Int = 20000
 
-    private var collectData:Boolean = true
+    private var collectData: Boolean = true
     private var deleteCurrentData = false
-    private var resetPressed:Boolean = false
-    private var prayerid:Int = 1
-    private var prayeridInitialized:Boolean = false
+    private var resetPressed: Boolean = false
+    private var prayerid: Int = 1
+    private var prayeridInitialized: Boolean = false
 
 
-    private var gyroDataDB:GyroSensorData = GyroSensorData()
+    private var gyroDataDB: GyroSensorData = GyroSensorData()
     private var linaccDataDB: LinearaccSensorData = LinearaccSensorData()
 
     //prayer motions and phone placements
     private var current_motion: String = ""
-    private var current_placement:String = ""
-    private var current_side:String = ""
+    private var current_placement: String = ""
+    private var current_side: String = ""
     private var current_elevation = ""
 
-    fun registerListeners(){
+    fun registerListeners() {
         //Initializing prayerId for data collection
         if (!prayeridInitialized) {
             initializePrayerID()
@@ -121,7 +145,6 @@ open class sensors(
             this,
             linearaccSensor,
             SensorManager.SENSOR_DELAY_GAME,
-//            SensorManager.SENSOR_DELAY_NORMAL,
             SensorManager.SENSOR_DELAY_NORMAL
         )
         //  registering gyroscope
@@ -130,7 +153,32 @@ open class sensors(
             this,
             gyroscopeSensor,
             SensorManager.SENSOR_DELAY_GAME,
-//            SensorManager.SENSOR_DELAY_NORMAL,
+            SensorManager.SENSOR_DELAY_NORMAL
+        )
+
+        //registering rotation vector sensor
+        mSensorManager.registerListener(
+            this,
+            rotationvectorSensor,
+            SensorManager.SENSOR_DELAY_GAME,
+            SensorManager.SENSOR_DELAY_NORMAL
+        )
+
+        //  registering magnetic field
+        //  Sampling period is game with normal delay
+        mSensorManager.registerListener(
+            this,
+            magnometerSensor,
+            SensorManager.SENSOR_DELAY_GAME,
+            SensorManager.SENSOR_DELAY_NORMAL
+        )
+
+        //  registering accelerametor sensor
+        //  Sampling period is game with normal delay
+        mSensorManager.registerListener(
+            this,
+            acceleremetorSensor,
+            SensorManager.SENSOR_DELAY_GAME,
             SensorManager.SENSOR_DELAY_NORMAL
         )
 
@@ -139,7 +187,7 @@ open class sensors(
         deleteCurrentData = false
     }
 
-    fun unregisterListeners(){
+    fun unregisterListeners() {
         mSensorManager.unregisterListener(this)
         collectData = false
         db.close()
@@ -148,11 +196,30 @@ open class sensors(
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onSensorChanged(event: SensorEvent?) {
 
-        if (event?.sensor?.type == Sensor.TYPE_GYROSCOPE){
-            gyroData(event)
+        if (event?.sensor?.type == Sensor.TYPE_MAGNETIC_FIELD){
+            System.arraycopy(event.values, 0, mf_orientation_values, 0, 3)
         }
-        if (event?.sensor?.type == Sensor.TYPE_LINEAR_ACCELERATION){
-            linearaccData(event)
+
+        if (event?.sensor?.type == Sensor.TYPE_ACCELEROMETER){
+            System.arraycopy(event.values, 0,am_orientation_values, 0, 3)
+        }
+
+        orientationAngles = phoneOrientationAngles(
+            mf_orientation_values,
+            am_orientation_values
+        )
+
+        if (event?.sensor?.type == Sensor.TYPE_GYROSCOPE) {
+            System.arraycopy(event.values, 0, g_orientation_values, 0, 3)
+            g_remapped_values = adjustedSensorData(event.values,orientationAngles)
+            gyroData(event,g_remapped_values)
+        }
+
+        if (event?.sensor?.type == Sensor.TYPE_LINEAR_ACCELERATION)
+        {
+            System.arraycopy(event.values, 0, la_orientation_values, 0, 3)
+            la_remapped_values = adjustedSensorData(event.values,orientationAngles)
+            linearaccData(event,la_remapped_values)
         }
 
         timeStamp()
@@ -178,16 +245,19 @@ open class sensors(
     //  3) Updates text label of x,y,z
     //  4) Adds shake meter progressbar and shows shake acceleration
     @RequiresApi(Build.VERSION_CODES.O)
-    private fun gyroData(event: SensorEvent?){
+    private fun gyroData(event: SensorEvent?, g_remapped_values:FloatArray){
 
         val xg: Float = event!!.values[0]
         val yg: Float = event.values[1]
         val zg: Float = event.values[2]
 
-        val x:Double = String.format("%.2f", xg).toDouble()
-        val y:Double = String.format("%.2f", yg).toDouble()
-        val z:Double = String.format("%.2f", zg).toDouble()
+//        val x:Double = String.format("%.2f", xg).toDouble()
+//        val y:Double = String.format("%.2f", yg).toDouble()
+//        val z:Double = String.format("%.2f", zg).toDouble()
 
+        val x:Double = String.format("%.2f", g_remapped_values[0]).toDouble()
+        val y:Double = String.format("%.2f", g_remapped_values[1]).toDouble()
+        val z:Double = String.format("%.2f", g_remapped_values[2]).toDouble()
 
         if (collectData) {
 
@@ -246,30 +316,39 @@ open class sensors(
     //  3) Updates text label of x,y,z
     //  4) Adds shake meter progressbar and shows shake acceleration
     @RequiresApi(Build.VERSION_CODES.O)
-    private fun linearaccData(event: SensorEvent?){
+    private fun linearaccData(event: SensorEvent?,la_remapped_values:FloatArray){
 
         val xla: Float = event!!.values[0]
         val yla: Float = event.values[1]
         val zla: Float = event.values[2]
 
-        val x:Double = String.format("%.2f", xla).toDouble()
-        val y:Double = String.format("%.2f", yla).toDouble()
-        val z:Double = String.format("%.2f", zla).toDouble()
+//        val x:Double = String.format("%.2f", xla).toDouble()
+//        val y:Double = String.format("%.2f", yla).toDouble()
+//        val z:Double = String.format("%.2f", zla).toDouble()
+
+        val x:Double = String.format("%.2f", la_remapped_values[0]).toDouble()
+        val y:Double = String.format("%.2f", la_remapped_values[1]).toDouble()
+        val z:Double = String.format("%.2f", la_remapped_values[2]).toDouble()
 
         if (collectData) {
 
             linaccDataDB.prayerID = prayerid
 
-            Log.d(
-                "linearData", "userid: ${linaccDataDB.userID}" +
-                        "\tprayerid: ${linaccDataDB.prayerID}" +
-                        "\ttimestamp: ${timeStamp()}" +
-                        "\txla: $x\tyla: $y\tzla: $z" +
-                        "\tmotion: ${current_motion}" +
-                        "\tplacement: ${current_placement}" +
-                        "\tside: ${current_side}" +
-                        "\televation: ${current_elevation}"
-            )
+//            Log.d(
+//                "linearData", "userid: ${linaccDataDB.userID}" +
+//                        "\tprayerid: ${linaccDataDB.prayerID}" +
+//                        "\ttimestamp: ${timeStamp()}" +
+//                        "\txla: $x\tyla: $y\tzla: $z" +
+//                        "\tmotion: ${current_motion}" +
+//                        "\tplacement: ${current_placement}" +
+//                        "\tside: ${current_side}" +
+//                        "\televation: ${current_elevation}"
+//            )
+
+            Log.d("linearData",
+            "x: ${x}" +
+                    "y: ${y}" +
+                    "z: ${z}")
             val insertLinearaccSensorData= LinearaccSensorData(user.id,prayerid,timeStamp(),x,y,z,current_motion,current_placement,current_side,current_elevation)
             db.insertLinAccData(insertLinearaccSensorData)
         }
@@ -448,5 +527,60 @@ open class sensors(
 
     }
 
+    fun phoneOrientationAngles(
+        magfield_values:FloatArray,
+        accmeter_values:FloatArray
+    ):FloatArray{
+        val I_custom: FloatArray = floatArrayOf(
+            0.0f,0.0f,0.0f,
+            0.0f,0.0f,0.0f,
+            0.0f,0.0f,0.0f)
+        SensorManager.getRotationMatrix(
+            rotationMatrix,
+            I_custom,
+            accmeter_values,
+            magfield_values
+        )
 
+        SensorManager.getOrientation(rotationMatrix,orientationAngles)
+
+        for (i in 0 until 3){
+            Math.toDegrees(orientationAngles[i].toDouble()).toFloat()
+        }
+
+        Log.d("orientationAngles", "" +
+                " x: ${orientationAngles[0].toString()}" +
+                " y: ${orientationAngles[1].toString()}" +
+                " z: ${orientationAngles[2].toString()}")
+
+
+        return orientationAngles
+    }
+
+    fun adjustedSensorData(event: FloatArray,orientation_angles: FloatArray): FloatArray {
+
+        val invertedRotationMatrix = FloatArray(9)
+
+        // Transpose the rotation matrix
+        invertedRotationMatrix[0] = rotationMatrix[0]
+        invertedRotationMatrix[1] = rotationMatrix[3]
+        invertedRotationMatrix[2] = rotationMatrix[6]
+        invertedRotationMatrix[3] = rotationMatrix[1]
+        invertedRotationMatrix[4] = rotationMatrix[4]
+        invertedRotationMatrix[5] = rotationMatrix[7]
+        invertedRotationMatrix[6] = rotationMatrix[2]
+        invertedRotationMatrix[7] = rotationMatrix[5]
+        invertedRotationMatrix[8] = rotationMatrix[8]
+        // Apply the inverse rotation matrix to the sensor data
+        val adjustedSensorData = FloatArray(3)
+//        adjustedSensorData[0] = (invertedRotationMatrix[0] * event[0] + invertedRotationMatrix[1] * event[1] + invertedRotationMatrix[2] * event[2]).toFloat()
+//        adjustedSensorData[1] = (invertedRotationMatrix[3] * event[0] + invertedRotationMatrix[4] * event[1] + invertedRotationMatrix[5] * event[2]).toFloat()
+//        adjustedSensorData[2] = (invertedRotationMatrix[6] * event[0] + invertedRotationMatrix[7] * event[1] + invertedRotationMatrix[8] * event[2]).toFloat()
+
+        adjustedSensorData[0] = (rotationMatrix[0] * event[0] + rotationMatrix[1] * event[1] + rotationMatrix[2] * event[2]).toFloat()
+        adjustedSensorData[2] = (rotationMatrix[3] * event[0] + rotationMatrix[4] * event[1] + rotationMatrix[5] * event[2]).toFloat()
+        adjustedSensorData[1] = (rotationMatrix[6] * event[0] + rotationMatrix[7] * event[1] + rotationMatrix[8] * event[2]).toFloat()
+
+        return adjustedSensorData
+    }
 }
