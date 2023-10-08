@@ -544,9 +544,9 @@ open class sensors(
 
         SensorManager.getOrientation(rotationMatrix,orientationAngles)
 
-        for (i in 0 until 3){
-            Math.toDegrees(orientationAngles[i].toDouble()).toFloat()
-        }
+//        for (i in 0 until 3){
+//            Math.toDegrees(orientationAngles[i].toDouble()).toFloat()
+//        }
 
         Log.d("orientationAngles", "" +
                 " x: ${orientationAngles[0].toString()}" +
@@ -578,9 +578,14 @@ open class sensors(
 //        adjustedSensorData[2] = (invertedRotationMatrix[6] * event[0] + invertedRotationMatrix[7] * event[1] + invertedRotationMatrix[8] * event[2]).toFloat()
 
         adjustedSensorData[0] = (rotationMatrix[0] * event[0] + rotationMatrix[1] * event[1] + rotationMatrix[2] * event[2]).toFloat()
-        adjustedSensorData[2] = (rotationMatrix[3] * event[0] + rotationMatrix[4] * event[1] + rotationMatrix[5] * event[2]).toFloat()
-        adjustedSensorData[1] = (rotationMatrix[6] * event[0] + rotationMatrix[7] * event[1] + rotationMatrix[8] * event[2]).toFloat()
+        adjustedSensorData[1] = (rotationMatrix[3] * event[0] + rotationMatrix[4] * event[1] + rotationMatrix[5] * event[2]).toFloat()
+        adjustedSensorData[2] = (rotationMatrix[6] * event[0] + rotationMatrix[7] * event[1] + rotationMatrix[8] * event[2]).toFloat()
 
-        return adjustedSensorData
+        val adjustedAxis: FloatArray = FloatArray(3)
+        adjustedAxis[0] = adjustedSensorData[0]
+        adjustedAxis[1] = adjustedSensorData[2]
+        adjustedAxis[2] = adjustedSensorData[1]
+
+        return adjustedAxis
     }
 }
