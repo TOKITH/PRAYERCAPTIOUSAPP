@@ -58,9 +58,9 @@ open class sensors(
     //Sensors from sensor manager
     val linearaccSensor: Sensor? = mSensorManager.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION)
     val gyroscopeSensor: Sensor? = mSensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE)
-    val rotationvectorSensor: Sensor? = mSensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR)
-    val magnometerSensor: Sensor? = mSensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD)
-    val acceleremetorSensor: Sensor? = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
+//    val rotationvectorSensor: Sensor? = mSensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR)
+//    val magnometerSensor: Sensor? = mSensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD)
+//    val acceleremetorSensor: Sensor? = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
 
     //orientation values
     var g_orientation_values: FloatArray = FloatArray(3)
@@ -157,30 +157,30 @@ open class sensors(
         )
 
         //registering rotation vector sensor
-        mSensorManager.registerListener(
-            this,
-            rotationvectorSensor,
-            SensorManager.SENSOR_DELAY_GAME,
-            SensorManager.SENSOR_DELAY_NORMAL
-        )
+//        mSensorManager.registerListener(
+//            this,
+//            rotationvectorSensor,
+//            SensorManager.SENSOR_DELAY_GAME,
+//            SensorManager.SENSOR_DELAY_NORMAL
+//        )
 
         //  registering magnetic field
         //  Sampling period is game with normal delay
-        mSensorManager.registerListener(
-            this,
-            magnometerSensor,
-            SensorManager.SENSOR_DELAY_GAME,
-            SensorManager.SENSOR_DELAY_NORMAL
-        )
+//        mSensorManager.registerListener(
+//            this,
+//            magnometerSensor,
+//            SensorManager.SENSOR_DELAY_GAME,
+//            SensorManager.SENSOR_DELAY_NORMAL
+//        )
 
         //  registering accelerametor sensor
         //  Sampling period is game with normal delay
-        mSensorManager.registerListener(
-            this,
-            acceleremetorSensor,
-            SensorManager.SENSOR_DELAY_GAME,
-            SensorManager.SENSOR_DELAY_NORMAL
-        )
+//        mSensorManager.registerListener(
+//            this,
+//            acceleremetorSensor,
+//            SensorManager.SENSOR_DELAY_GAME,
+//            SensorManager.SENSOR_DELAY_NORMAL
+//        )
 
         collectData = true
         resetPressed = false
@@ -196,30 +196,30 @@ open class sensors(
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onSensorChanged(event: SensorEvent?) {
 
-        if (event?.sensor?.type == Sensor.TYPE_MAGNETIC_FIELD){
-            System.arraycopy(event.values, 0, mf_orientation_values, 0, 3)
-        }
-
-        if (event?.sensor?.type == Sensor.TYPE_ACCELEROMETER){
-            System.arraycopy(event.values, 0,am_orientation_values, 0, 3)
-        }
-
-        orientationAngles = phoneOrientationAngles(
-            mf_orientation_values,
-            am_orientation_values
-        )
+//        if (event?.sensor?.type == Sensor.TYPE_MAGNETIC_FIELD){
+//            System.arraycopy(event.values, 0, mf_orientation_values, 0, 3)
+//        }
+//
+//        if (event?.sensor?.type == Sensor.TYPE_ACCELEROMETER){
+//            System.arraycopy(event.values, 0,am_orientation_values, 0, 3)
+//        }
+//
+//        orientationAngles = phoneOrientationAngles(
+//            mf_orientation_values,
+//            am_orientation_values
+//        )
 
         if (event?.sensor?.type == Sensor.TYPE_GYROSCOPE) {
-            System.arraycopy(event.values, 0, g_orientation_values, 0, 3)
-            g_remapped_values = adjustedSensorData(event.values,orientationAngles)
-            gyroData(event,g_remapped_values)
+//            System.arraycopy(event.values, 0, g_orientation_values, 0, 3)
+//            g_remapped_values = adjustedSensorData(event.values,orientationAngles)
+            gyroData(event)
         }
 
         if (event?.sensor?.type == Sensor.TYPE_LINEAR_ACCELERATION)
         {
-            System.arraycopy(event.values, 0, la_orientation_values, 0, 3)
-            la_remapped_values = adjustedSensorData(event.values,orientationAngles)
-            linearaccData(event,la_remapped_values)
+//            System.arraycopy(event.values, 0, la_orientation_values, 0, 3)
+//            la_remapped_values = adjustedSensorData(event.values,orientationAngles)
+            linearaccData(event)
         }
 
         timeStamp()
@@ -245,19 +245,19 @@ open class sensors(
     //  3) Updates text label of x,y,z
     //  4) Adds shake meter progressbar and shows shake acceleration
     @RequiresApi(Build.VERSION_CODES.O)
-    private fun gyroData(event: SensorEvent?, g_remapped_values:FloatArray){
+    private fun gyroData(event: SensorEvent?){
 
         val xg: Float = event!!.values[0]
         val yg: Float = event.values[1]
         val zg: Float = event.values[2]
 
-//        val x:Double = String.format("%.2f", xg).toDouble()
-//        val y:Double = String.format("%.2f", yg).toDouble()
-//        val z:Double = String.format("%.2f", zg).toDouble()
+        val x:Double = String.format("%.2f", xg).toDouble()
+        val y:Double = String.format("%.2f", yg).toDouble()
+        val z:Double = String.format("%.2f", zg).toDouble()
 
-        val x:Double = String.format("%.2f", g_remapped_values[0]).toDouble()
-        val y:Double = String.format("%.2f", g_remapped_values[1]).toDouble()
-        val z:Double = String.format("%.2f", g_remapped_values[2]).toDouble()
+//        val x:Double = String.format("%.2f", g_remapped_values[0]).toDouble()
+//        val y:Double = String.format("%.2f", g_remapped_values[1]).toDouble()
+//        val z:Double = String.format("%.2f", g_remapped_values[2]).toDouble()
 
         if (collectData) {
 
@@ -316,19 +316,19 @@ open class sensors(
     //  3) Updates text label of x,y,z
     //  4) Adds shake meter progressbar and shows shake acceleration
     @RequiresApi(Build.VERSION_CODES.O)
-    private fun linearaccData(event: SensorEvent?,la_remapped_values:FloatArray){
+    private fun linearaccData(event: SensorEvent?){
 
         val xla: Float = event!!.values[0]
         val yla: Float = event.values[1]
         val zla: Float = event.values[2]
 
-//        val x:Double = String.format("%.2f", xla).toDouble()
-//        val y:Double = String.format("%.2f", yla).toDouble()
-//        val z:Double = String.format("%.2f", zla).toDouble()
+        val x:Double = String.format("%.2f", xla).toDouble()
+        val y:Double = String.format("%.2f", yla).toDouble()
+        val z:Double = String.format("%.2f", zla).toDouble()
 
-        val x:Double = String.format("%.2f", la_remapped_values[0]).toDouble()
-        val y:Double = String.format("%.2f", la_remapped_values[1]).toDouble()
-        val z:Double = String.format("%.2f", la_remapped_values[2]).toDouble()
+//        val x:Double = String.format("%.2f", la_remapped_values[0]).toDouble()
+//        val y:Double = String.format("%.2f", la_remapped_values[1]).toDouble()
+//        val z:Double = String.format("%.2f", la_remapped_values[2]).toDouble()
 
         if (collectData) {
 
