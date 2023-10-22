@@ -63,5 +63,7 @@ dependencies {
     implementation("androidx.compose.material:material:1.4.3")
     implementation("androidx.activity:activity-compose:1.7.2")
     implementation("com.jjoe64:graphview:4.2.2")
+    implementation("org.joml:joml:1.10.4")
+    implementation("com.google.ar.sceneform:sceneform-base:1.17.1")
 
 }

@@ -5,19 +5,22 @@ import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
-import android.opengl.Matrix
+import org.joml.Quaternionf
 import android.os.Build
 import android.util.Log
 import android.widget.AutoCompleteTextView
 import android.widget.Spinner
 import android.widget.TextView
 import androidx.annotation.RequiresApi
+import androidx.core.graphics.rotationMatrix
+import com.google.ar.sceneform.math.Quaternion
 import com.jjoe64.graphview.GraphView
 import com.jjoe64.graphview.series.DataPoint
 import com.jjoe64.graphview.series.LineGraphSeries
 import java.time.Instant
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
+import kotlin.math.pow
 
 
 //Collect data of specific sensors: x,y,z axis of gyroscope, linear acceleration
@@ -58,23 +61,23 @@ open class sensors(
     //Sensors from sensor manager
     val linearaccSensor: Sensor? = mSensorManager.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION)
     val gyroscopeSensor: Sensor? = mSensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE)
-//    val rotationvectorSensor: Sensor? = mSensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR)
+    val rotationvectorSensor: Sensor? = mSensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR)
 //    val magnometerSensor: Sensor? = mSensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD)
 //    val acceleremetorSensor: Sensor? = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
 
-    //orientation values
-    var g_orientation_values: FloatArray = FloatArray(3)
-    var la_orientation_values: FloatArray = FloatArray(3)
-    var mf_orientation_values: FloatArray = FloatArray(3)
-    var am_orientation_values: FloatArray = FloatArray(3)
-    var orientationAngles:FloatArray = FloatArray(3)
+    //quaternions to euler angle to avoid gimbal lock
+    var remapped_g_eulerAngles:FloatArray = FloatArray(3)
+    var remapped_la_eulerAngles:FloatArray = FloatArray(3)
+    var g_euler_angles:FloatArray = FloatArray(3)
+    var previous_la_angles:FloatArray = FloatArray(3)
+    var la_euler_angles:FloatArray = FloatArray(3)
+    val orientationVals:FloatArray = FloatArray(9)
+    val rotMatrix:FloatArray = FloatArray(9)
+    val adjustedGyroscopeData:FloatArray = FloatArray(3)
+    val referenceOrientation:FloatArray = floatArrayOf(1f,0f,0f,0f)
+    var R:FloatArray= FloatArray(9)
+    val rotation_vector:FloatArray = FloatArray(4)
 
-    //Adjusted values regardless phone orientation
-    var la_remapped_values: FloatArray = FloatArray(3)
-    var g_remapped_values:FloatArray = FloatArray(3)
-
-    //Matrix calculation placeholders
-    var rotationMatrix:FloatArray = FloatArray(9)
 
     //gyrograph graph stuff
     private var pointsplottedGyro: Double = 0.0
@@ -157,12 +160,12 @@ open class sensors(
         )
 
         //registering rotation vector sensor
-//        mSensorManager.registerListener(
-//            this,
-//            rotationvectorSensor,
-//            SensorManager.SENSOR_DELAY_GAME,
-//            SensorManager.SENSOR_DELAY_NORMAL
-//        )
+        mSensorManager.registerListener(
+            this,
+            rotationvectorSensor,
+            SensorManager.SENSOR_DELAY_GAME,
+            SensorManager.SENSOR_DELAY_NORMAL
+        )
 
         //  registering magnetic field
         //  Sampling period is game with normal delay
@@ -195,31 +198,20 @@ open class sensors(
 
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onSensorChanged(event: SensorEvent?) {
-
-//        if (event?.sensor?.type == Sensor.TYPE_MAGNETIC_FIELD){
-//            System.arraycopy(event.values, 0, mf_orientation_values, 0, 3)
-//        }
-//
-//        if (event?.sensor?.type == Sensor.TYPE_ACCELEROMETER){
-//            System.arraycopy(event.values, 0,am_orientation_values, 0, 3)
-//        }
-//
-//        orientationAngles = phoneOrientationAngles(
-//            mf_orientation_values,
-//            am_orientation_values
-//        )
+        if (event?.sensor?.type == Sensor.TYPE_ROTATION_VECTOR)
+        {
+            System.arraycopy(event.values, 0, rotation_vector, 0, 4)
+        }
 
         if (event?.sensor?.type == Sensor.TYPE_GYROSCOPE) {
-//            System.arraycopy(event.values, 0, g_orientation_values, 0, 3)
-//            g_remapped_values = adjustedSensorData(event.values,orientationAngles)
-            gyroData(event)
+            val g_remapped = adjustedSensorDataG(event,rotation_vector)
+            gyroData(event,g_remapped)
         }
 
         if (event?.sensor?.type == Sensor.TYPE_LINEAR_ACCELERATION)
         {
-//            System.arraycopy(event.values, 0, la_orientation_values, 0, 3)
-//            la_remapped_values = adjustedSensorData(event.values,orientationAngles)
-            linearaccData(event)
+            val la_remapped= adjustedSensorDataLA(event,rotation_vector)
+            linearaccData(event,la_remapped)
         }
 
         timeStamp()
@@ -245,19 +237,19 @@ open class sensors(
     //  3) Updates text label of x,y,z
     //  4) Adds shake meter progressbar and shows shake acceleration
     @RequiresApi(Build.VERSION_CODES.O)
-    private fun gyroData(event: SensorEvent?){
+    private fun gyroData(event: SensorEvent?,g_remapped_values:FloatArray){
 
         val xg: Float = event!!.values[0]
         val yg: Float = event.values[1]
         val zg: Float = event.values[2]
 
-        val x:Double = String.format("%.2f", xg).toDouble()
-        val y:Double = String.format("%.2f", yg).toDouble()
-        val z:Double = String.format("%.2f", zg).toDouble()
+//        val x:Double = String.format("%.2f", xg).toDouble()
+//        val y:Double = String.format("%.2f", yg).toDouble()
+//        val z:Double = String.format("%.2f", zg).toDouble()
 
-//        val x:Double = String.format("%.2f", g_remapped_values[0]).toDouble()
-//        val y:Double = String.format("%.2f", g_remapped_values[1]).toDouble()
-//        val z:Double = String.format("%.2f", g_remapped_values[2]).toDouble()
+        val x:Double = String.format("%.2f", g_remapped_values[0]).toDouble()
+        val y:Double = String.format("%.2f", g_remapped_values[1]).toDouble()
+        val z:Double = String.format("%.2f", g_remapped_values[2]).toDouble()
 
         if (collectData) {
 
@@ -316,19 +308,19 @@ open class sensors(
     //  3) Updates text label of x,y,z
     //  4) Adds shake meter progressbar and shows shake acceleration
     @RequiresApi(Build.VERSION_CODES.O)
-    private fun linearaccData(event: SensorEvent?){
+    private fun linearaccData(event: SensorEvent?,remapped_event:FloatArray){
 
         val xla: Float = event!!.values[0]
         val yla: Float = event.values[1]
         val zla: Float = event.values[2]
 
-        val x:Double = String.format("%.2f", xla).toDouble()
-        val y:Double = String.format("%.2f", yla).toDouble()
-        val z:Double = String.format("%.2f", zla).toDouble()
+//        val x:Double = String.format("%.2f", xla).toDouble()
+//        val y:Double = String.format("%.2f", yla).toDouble()
+//        val z:Double = String.format("%.2f", zla).toDouble()
 
-//        val x:Double = String.format("%.2f", la_remapped_values[0]).toDouble()
-//        val y:Double = String.format("%.2f", la_remapped_values[1]).toDouble()
-//        val z:Double = String.format("%.2f", la_remapped_values[2]).toDouble()
+        val x:Double = String.format("%.2f", remapped_event[0]).toDouble()
+        val y:Double = String.format("%.2f", remapped_event[1]).toDouble()
+        val z:Double = String.format("%.2f", remapped_event[2]).toDouble()
 
         if (collectData) {
 
@@ -346,9 +338,9 @@ open class sensors(
 //            )
 
             Log.d("linearData",
-            "x: ${x}" +
-                    "y: ${y}" +
-                    "z: ${z}")
+            " x: ${x}" +
+                    " y: ${y}" +
+                    " z: ${z}")
             val insertLinearaccSensorData= LinearaccSensorData(user.id,prayerid,timeStamp(),x,y,z,current_motion,current_placement,current_side,current_elevation)
             db.insertLinAccData(insertLinearaccSensorData)
         }
@@ -527,65 +519,73 @@ open class sensors(
 
     }
 
-    fun phoneOrientationAngles(
-        magfield_values:FloatArray,
-        accmeter_values:FloatArray
-    ):FloatArray{
-        val I_custom: FloatArray = floatArrayOf(
-            0.0f,0.0f,0.0f,
-            0.0f,0.0f,0.0f,
-            0.0f,0.0f,0.0f)
-        SensorManager.getRotationMatrix(
-            rotationMatrix,
-            I_custom,
-            accmeter_values,
-            magfield_values
+    fun adjustedSensorDataLA(event: SensorEvent?,rotation_vector:FloatArray): FloatArray {
+        //Sensor raw euler x,y,z values (Linear acceleration data in m/s^2)
+        val x: Float = event?.values!![0]
+        val y: Float = event.values[1]
+        val z: Float = event.values[2]
+
+        // Rotation vector of the phone (orientation in quaternions)
+        val i: Float = rotation_vector[0] //x quat
+        val j: Float = rotation_vector[1] //y quat
+        val k: Float = rotation_vector[2] //z quat
+        val w: Float = rotation_vector[3] //Scaler
+
+
+//         Reference_orientation = [0,0,1] represents phone
+//        R = floatArrayOf(
+//            1 - 2 * (k * k + w * w), 2 * (j * k - i * w), 2 * (j * w + i * k),
+//            2 * (j * k + i * w), 1 - 2 * (j * j + w * w), 2 * (k * w - i * j),
+//            2 * (j * w - i * k), 2 * (k * w + i * j), 1 - 2 * (j * j + k * k)
+//        )
+
+        R = floatArrayOf(
+            w * w + i * i - j * j - k * k, 2 * (i * j - w * k), 2 * (i * k + w * j),
+            2 * (i * j + w * k), w * w - i * i + j * j - k * k, 2 * (j * k - w * i),
+            2 * (i * k - w * j), 2 * (j * k + w * i), w * w - i * i - j * j + k * k
         )
 
-        SensorManager.getOrientation(rotationMatrix,orientationAngles)
 
-//        for (i in 0 until 3){
-//            Math.toDegrees(orientationAngles[i].toDouble()).toFloat()
-//        }
-
-        Log.d("orientationAngles", "" +
-                " x: ${orientationAngles[0].toString()}" +
-                " y: ${orientationAngles[1].toString()}" +
-                " z: ${orientationAngles[2].toString()}")
+        // Transformed linear acceleration data through R.sensor_data
+        val transformedData: FloatArray = FloatArray(3)
+        transformedData[2] = (R[0] * x) + (R[1] * y) + (R[2] * z)
+        transformedData[0] = (R[3] * x) + (R[4] * y) + (R[5] * z) //good y
+        transformedData[1] = (R[6] * x) + (R[7] * y) + (R[8] * z)
 
 
-        return orientationAngles
+
+
+        return transformedData
     }
 
-    fun adjustedSensorData(event: FloatArray,orientation_angles: FloatArray): FloatArray {
+    fun adjustedSensorDataG(event: SensorEvent?,rotation_vector:FloatArray):FloatArray {
+        //Sensor raw euler x,y,z values (Gyroscope data in rad/s)
+        val x: Float = event?.values!![0]
+        val y: Float = event.values[1]
+        val z: Float = event.values[2]
 
-        val invertedRotationMatrix = FloatArray(9)
+        // Rotation vector of the phone (orientation in quaternions)
+        val i: Float = rotation_vector[0] //x quat
+        val j: Float = rotation_vector[1] //y quat
+        val k: Float = rotation_vector[2] //z quat
+        val w: Float = rotation_vector[3] //Scaler
 
-        // Transpose the rotation matrix
-        invertedRotationMatrix[0] = rotationMatrix[0]
-        invertedRotationMatrix[1] = rotationMatrix[3]
-        invertedRotationMatrix[2] = rotationMatrix[6]
-        invertedRotationMatrix[3] = rotationMatrix[1]
-        invertedRotationMatrix[4] = rotationMatrix[4]
-        invertedRotationMatrix[5] = rotationMatrix[7]
-        invertedRotationMatrix[6] = rotationMatrix[2]
-        invertedRotationMatrix[7] = rotationMatrix[5]
-        invertedRotationMatrix[8] = rotationMatrix[8]
-        // Apply the inverse rotation matrix to the sensor data
-        val adjustedSensorData = FloatArray(3)
-//        adjustedSensorData[0] = (invertedRotationMatrix[0] * event[0] + invertedRotationMatrix[1] * event[1] + invertedRotationMatrix[2] * event[2]).toFloat()
-//        adjustedSensorData[1] = (invertedRotationMatrix[3] * event[0] + invertedRotationMatrix[4] * event[1] + invertedRotationMatrix[5] * event[2]).toFloat()
-//        adjustedSensorData[2] = (invertedRotationMatrix[6] * event[0] + invertedRotationMatrix[7] * event[1] + invertedRotationMatrix[8] * event[2]).toFloat()
 
-        adjustedSensorData[0] = (rotationMatrix[0] * event[0] + rotationMatrix[1] * event[1] + rotationMatrix[2] * event[2]).toFloat()
-        adjustedSensorData[1] = (rotationMatrix[3] * event[0] + rotationMatrix[4] * event[1] + rotationMatrix[5] * event[2]).toFloat()
-        adjustedSensorData[2] = (rotationMatrix[6] * event[0] + rotationMatrix[7] * event[1] + rotationMatrix[8] * event[2]).toFloat()
+//         Reference_orientation = [0,0,1] represents phone
 
-        val adjustedAxis: FloatArray = FloatArray(3)
-        adjustedAxis[0] = adjustedSensorData[0]
-        adjustedAxis[1] = adjustedSensorData[2]
-        adjustedAxis[2] = adjustedSensorData[1]
+        R = floatArrayOf(
+            w * w + i * i - j * j - k * k, 2 * (i * j - w * k), 2 * (i * k + w * j),
+            2 * (i * j + w * k), w * w - i * i + j * j - k * k, 2 * (j * k - w * i),
+            2 * (i * k - w * j), 2 * (j * k + w * i), w * w - i * i - j * j + k * k
+        )
 
-        return adjustedAxis
+
+        // Transformed linear acceleration data through R.sensor_data
+        val transformedData: FloatArray = FloatArray(3)
+        transformedData[0] = (R[0] * x) + (R[1] * y) + (R[2] * z)
+        transformedData[2] = (R[3] * x) + (R[4] * y) + (R[5] * z)
+        transformedData[1] = (R[6] * x) + (R[7] * y) + (R[8] * z)
+
+        return transformedData
     }
 }
