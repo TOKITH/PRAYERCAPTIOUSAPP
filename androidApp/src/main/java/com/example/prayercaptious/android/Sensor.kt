@@ -204,13 +204,13 @@ open class sensors(
         }
 
         if (event?.sensor?.type == Sensor.TYPE_GYROSCOPE) {
-            val g_remapped = adjustedSensorDataG(event,rotation_vector)
+            val g_remapped = adjustedSensorData(event,rotation_vector)
             gyroData(event,g_remapped)
         }
 
         if (event?.sensor?.type == Sensor.TYPE_LINEAR_ACCELERATION)
         {
-            val la_remapped= adjustedSensorDataLA(event,rotation_vector)
+            val la_remapped= adjustedSensorData(event,rotation_vector)
             linearaccData(event,la_remapped)
         }
 
@@ -519,7 +519,7 @@ open class sensors(
 
     }
 
-    fun adjustedSensorDataLA(event: SensorEvent?,rotation_vector:FloatArray): FloatArray {
+    fun adjustedSensorData(event: SensorEvent?,rotation_vector:FloatArray): FloatArray {
         //Sensor raw euler x,y,z values (Linear acceleration data in m/s^2)
         val x: Float = event?.values!![0]
         val y: Float = event.values[1]
@@ -554,37 +554,6 @@ open class sensors(
 
 
 
-
-        return transformedData
-    }
-
-    fun adjustedSensorDataG(event: SensorEvent?,rotation_vector:FloatArray):FloatArray {
-        //Sensor raw euler x,y,z values (Gyroscope data in rad/s)
-        val x: Float = event?.values!![0]
-        val y: Float = event.values[1]
-        val z: Float = event.values[2]
-
-        // Rotation vector of the phone (orientation in quaternions)
-        val i: Float = rotation_vector[0] //x quat
-        val j: Float = rotation_vector[1] //y quat
-        val k: Float = rotation_vector[2] //z quat
-        val w: Float = rotation_vector[3] //Scaler
-
-
-//         Reference_orientation = [0,0,1] represents phone
-
-        R = floatArrayOf(
-            w * w + i * i - j * j - k * k, 2 * (i * j - w * k), 2 * (i * k + w * j),
-            2 * (i * j + w * k), w * w - i * i + j * j - k * k, 2 * (j * k - w * i),
-            2 * (i * k - w * j), 2 * (j * k + w * i), w * w - i * i - j * j + k * k
-        )
-
-
-        // Transformed linear acceleration data through R.sensor_data
-        val transformedData: FloatArray = FloatArray(3)
-        transformedData[0] = (R[0] * x) + (R[1] * y) + (R[2] * z)
-        transformedData[2] = (R[3] * x) + (R[4] * y) + (R[5] * z)
-        transformedData[1] = (R[6] * x) + (R[7] * y) + (R[8] * z)
 
         return transformedData
     }
