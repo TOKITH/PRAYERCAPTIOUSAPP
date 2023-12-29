@@ -1,26 +1,34 @@
 package com.example.prayercaptious.android
 
+import android.content.Context
 import android.graphics.Color
 import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
-import org.joml.Quaternionf
+import android.media.AudioManager
+import android.media.MediaPlayer
+import android.net.Uri
 import android.os.Build
+import android.os.SystemClock
+import android.provider.MediaStore.Audio
+import android.provider.MediaStore.Audio.Media
+import android.provider.MediaStore.INTENT_ACTION_MEDIA_PLAY_FROM_SEARCH
 import android.util.Log
 import android.widget.AutoCompleteTextView
 import android.widget.Spinner
 import android.widget.TextView
 import androidx.annotation.RequiresApi
-import androidx.core.graphics.rotationMatrix
-import com.google.ar.sceneform.math.Quaternion
 import com.jjoe64.graphview.GraphView
 import com.jjoe64.graphview.series.DataPoint
 import com.jjoe64.graphview.series.LineGraphSeries
+import org.joml.Math.sqrt
+import java.nio.DoubleBuffer
 import java.time.Instant
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
-import kotlin.math.pow
+import kotlin.time.*
+import kotlin.properties.Delegates
 
 
 //Collect data of specific sensors: x,y,z axis of gyroscope, linear acceleration
@@ -55,26 +63,20 @@ open class sensors(
     var motion: Spinner,
     var placement: AutoCompleteTextView,
     var side: Spinner,
-    var elevation: Spinner
+    var elevation: Spinner,
+    var mp:MyUtils.AudioUtils,
+    var rukuPerfomedAudio:Int
 ): SensorEventListener {
 
     //Sensors from sensor manager
     val linearaccSensor: Sensor? = mSensorManager.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION)
     val gyroscopeSensor: Sensor? = mSensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE)
     val rotationvectorSensor: Sensor? = mSensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR)
-//    val magnometerSensor: Sensor? = mSensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD)
-//    val acceleremetorSensor: Sensor? = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
+    val magnometerSensor: Sensor? = mSensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD)
+    val acceleremetorSensor: Sensor? = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
+    val lightSensor: Sensor? = mSensorManager.getDefaultSensor(Sensor.TYPE_LIGHT)
 
     //quaternions to euler angle to avoid gimbal lock
-    var remapped_g_eulerAngles:FloatArray = FloatArray(3)
-    var remapped_la_eulerAngles:FloatArray = FloatArray(3)
-    var g_euler_angles:FloatArray = FloatArray(3)
-    var previous_la_angles:FloatArray = FloatArray(3)
-    var la_euler_angles:FloatArray = FloatArray(3)
-    val orientationVals:FloatArray = FloatArray(9)
-    val rotMatrix:FloatArray = FloatArray(9)
-    val adjustedGyroscopeData:FloatArray = FloatArray(3)
-    val referenceOrientation:FloatArray = floatArrayOf(1f,0f,0f,0f)
     var R:FloatArray= FloatArray(9)
     val rotation_vector:FloatArray = FloatArray(4)
 
@@ -136,6 +138,18 @@ open class sensors(
     private var current_side: String = ""
     private var current_elevation = ""
 
+    private var room_light:Double = 0.0
+    private var stop_timer:Boolean = false
+    private var threshold:Double = 0.0
+
+    private var going_to_bow = false
+    private var bow_complete = false
+//    private var standing_to_prostration = false
+//    private var coming_up_from_prostrate = false
+//    private var going_down_to_prostrate = false
+//    private var standing_back_up = false
+//    private var stay_seated = false
+
     fun registerListeners() {
         //Initializing prayerId for data collection
         if (!prayeridInitialized) {
@@ -169,21 +183,28 @@ open class sensors(
 
         //  registering magnetic field
         //  Sampling period is game with normal delay
-//        mSensorManager.registerListener(
-//            this,
-//            magnometerSensor,
-//            SensorManager.SENSOR_DELAY_GAME,
-//            SensorManager.SENSOR_DELAY_NORMAL
-//        )
+        mSensorManager.registerListener(
+            this,
+            magnometerSensor,
+            SensorManager.SENSOR_DELAY_GAME,
+            SensorManager.SENSOR_DELAY_NORMAL
+        )
 
         //  registering accelerametor sensor
         //  Sampling period is game with normal delay
-//        mSensorManager.registerListener(
-//            this,
-//            acceleremetorSensor,
-//            SensorManager.SENSOR_DELAY_GAME,
-//            SensorManager.SENSOR_DELAY_NORMAL
-//        )
+        mSensorManager.registerListener(
+            this,
+            acceleremetorSensor,
+            SensorManager.SENSOR_DELAY_GAME,
+            SensorManager.SENSOR_DELAY_NORMAL
+        )
+
+        mSensorManager.registerListener(
+            this,
+            lightSensor,
+            SensorManager.SENSOR_DELAY_FASTEST,
+            SensorManager.SENSOR_DELAY_FASTEST
+        )
 
         collectData = true
         resetPressed = false
@@ -203,16 +224,27 @@ open class sensors(
             System.arraycopy(event.values, 0, rotation_vector, 0, 4)
         }
 
+        //Gyroscope sensor
         if (event?.sensor?.type == Sensor.TYPE_GYROSCOPE) {
             val g_remapped = adjustedSensorData(event,rotation_vector)
-            gyroData(event,g_remapped)
+            gyroData(event, g_remapped)
+            prayerPositionAlert(g_remapped)
         }
 
+        //Linear acceleration sensor
         if (event?.sensor?.type == Sensor.TYPE_LINEAR_ACCELERATION)
         {
             val la_remapped= adjustedSensorData(event,rotation_vector)
+//            val la_mag = magnitudeOfSensor(event)
             linearaccData(event,la_remapped)
         }
+
+        //Light sensor
+//        if (event?.sensor?.type == Sensor.TYPE_LIGHT)
+//        {
+//            linearaccData(event,floatArrayOf(0f,0f,0f))
+//            prayerPositionAlert(event)
+//        }
 
         timeStamp()
     }
@@ -250,6 +282,7 @@ open class sensors(
         val x:Double = String.format("%.2f", g_remapped_values[0]).toDouble()
         val y:Double = String.format("%.2f", g_remapped_values[1]).toDouble()
         val z:Double = String.format("%.2f", g_remapped_values[2]).toDouble()
+
 
         if (collectData) {
 
@@ -292,8 +325,8 @@ open class sensors(
         pointsplottedGyro+=1.0
 
         //x axis
-//        gyroXseries.appendData(DataPoint(pointsplottedGyro,round(x)),true,pointsplottedGyro.toInt())
         gyroXseries.appendData(DataPoint(pointsplottedGyro,(x)),true,pointsplottedGyro.toInt())
+//        gyroXseries.appendData(DataPoint(pointsplottedGyro,(x)),true,pointsplottedGyro.toInt()) //for magnitude
 
         //y axis
         gyroYseries.appendData(DataPoint(pointsplottedGyro,(y)),true,pointsplottedGyro.toInt())
@@ -308,7 +341,7 @@ open class sensors(
     //  3) Updates text label of x,y,z
     //  4) Adds shake meter progressbar and shows shake acceleration
     @RequiresApi(Build.VERSION_CODES.O)
-    private fun linearaccData(event: SensorEvent?,remapped_event:FloatArray){
+    private fun linearaccData(event: SensorEvent?, remapped_event: FloatArray){
 
         val xla: Float = event!!.values[0]
         val yla: Float = event.values[1]
@@ -321,6 +354,8 @@ open class sensors(
         val x:Double = String.format("%.2f", remapped_event[0]).toDouble()
         val y:Double = String.format("%.2f", remapped_event[1]).toDouble()
         val z:Double = String.format("%.2f", remapped_event[2]).toDouble()
+
+//        val x:Double = String.format("%.2f", remapped_event).toDouble() // for magnitude only
 
         if (collectData) {
 
@@ -384,8 +419,8 @@ open class sensors(
 
     fun graphSettings(graph:GraphView){
         graph.viewport.isScrollable = true
-        graph.viewport.setMaxY(12.0)
-        graph.viewport.setMinY(-12.0)
+        graph.viewport.setMaxY(10.0)
+        graph.viewport.setMinY(-10.0)
         graph.viewport.setMaxX(pointsplottedGyro)
         graph.viewport.setMinX(pointsplottedGyro-200)
         graph.viewport.isXAxisBoundsManual = true
@@ -520,7 +555,7 @@ open class sensors(
     }
 
     fun adjustedSensorData(event: SensorEvent?,rotation_vector:FloatArray): FloatArray {
-        //Sensor raw euler x,y,z values (Linear acceleration data in m/s^2)
+        //Sensor raw euler x,y,z values (gyroscope data in rad/s)
         val x: Float = event?.values!![0]
         val y: Float = event.values[1]
         val z: Float = event.values[2]
@@ -531,6 +566,8 @@ open class sensors(
         val k: Float = rotation_vector[2] //z quat
         val w: Float = rotation_vector[3] //Scaler
 
+        // Transformed linear acceleration data through R.sensor_data
+        val transformedData: FloatArray = FloatArray(3)
 
 //         Reference_orientation = [0,0,1] represents phone
 //        R = floatArrayOf(
@@ -538,23 +575,50 @@ open class sensors(
 //            2 * (j * k + i * w), 1 - 2 * (j * j + w * w), 2 * (k * w - i * j),
 //            2 * (j * w - i * k), 2 * (k * w + i * j), 1 - 2 * (j * j + k * k)
 //        )
-
         R = floatArrayOf(
-            w * w + i * i - j * j - k * k, 2 * (i * j - w * k), 2 * (i * k + w * j),
-            2 * (i * j + w * k), w * w - i * i + j * j - k * k, 2 * (j * k - w * i),
-            2 * (i * k - w * j), 2 * (j * k + w * i), w * w - i * i - j * j + k * k
+            1 - 2 * (j * j + k * k), 2 * (i * j - w * k), 2 * (i * k + w * j),
+            2 * (i * j + w * k), 1 - 2 * (i * i + k * k), 2 * (j * k - w * i),
+            2 * (i * k - w * j), 2 * (j * k + w * i), 1 - 2 * (i * i + j * j)
         )
 
+        //3 by 3
+//        R = floatArrayOf(
+//            w * w + i * i - j * j - k * k, 2 * (i * j - w * k), 2 * (i * k + w * j),
+//            2 * (i * j + w * k), w * w - i * i + j * j - k * k, 2 * (j * k - w * i),
+//            2 * (i * k - w * j), 2 * (j * k + w * i), w * w - i * i - j * j + k * k
+//        )
 
-        // Transformed linear acceleration data through R.sensor_data
-        val transformedData: FloatArray = FloatArray(3)
+
         transformedData[2] = (R[0] * x) + (R[1] * y) + (R[2] * z)
         transformedData[0] = (R[3] * x) + (R[4] * y) + (R[5] * z) //good y
         transformedData[1] = (R[6] * x) + (R[7] * y) + (R[8] * z)
 
-
-
-
         return transformedData
+    }
+
+    private fun prayerPositionAlert(sensorValues: FloatArray) {
+        //6points/sec for light
+        //50points/sec for gyro/lin acc
+        val x = sensorValues[0]
+        val y = sensorValues[1]
+        val z = sensorValues[2]
+
+        if (y > 0.4 ){
+            going_to_bow = true
+        }
+        if (going_to_bow && y<-0.25){
+            going_to_bow = false
+            bow_complete = true
+            mp.mpRelease() //Release before creating another instance
+            mp.playRawAudio(rukuPerfomedAudio)
+        }
+
+
+
+
+        //For audio
+//        mp.mpRelease() //Release before creating another instance
+//        mp.playRawAudio(rukuPerfomedAudio)
+
     }
 }

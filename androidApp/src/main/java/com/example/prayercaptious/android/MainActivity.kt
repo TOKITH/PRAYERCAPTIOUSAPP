@@ -3,6 +3,8 @@ package com.example.prayercaptious.android
 import android.content.Context
 import android.hardware.Sensor
 import android.hardware.SensorManager
+import android.media.MediaPlayer
+import android.net.Uri
 import android.os.Bundle
 import android.os.CountDownTimer
 import android.util.Log
@@ -41,6 +43,7 @@ class MainActivity : ComponentActivity(){
     //Database class
     private lateinit var db: SQLliteDB
     private lateinit var userData:User
+    private lateinit var mp: MyUtils.AudioUtils
 
     override fun onCreate(savedInstanceState: Bundle?) {
         //initialization and allows you to proceed with custom logic specific to activity
@@ -199,7 +202,9 @@ class MainActivity : ComponentActivity(){
             binding.spinnerPrayerMotion,
             binding.actvPlacementAreaName,
             binding.spinnerSide,
-            binding.spinnerPhoneElevation
+            binding.spinnerPhoneElevation,
+            mp,
+            R.raw.rukuperfomed
         )
         bindinghome.tvWelcomeUser.text =
             "As-Salaam-Alaikum ${userDetails.name} 😁," +
@@ -304,6 +309,7 @@ class MainActivity : ComponentActivity(){
         //Initalizing Database
         db = MyUtils.myDB(this)
 
+        mp = MyUtils.AudioUtils(this)
     }
 
 
