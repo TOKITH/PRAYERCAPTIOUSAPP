@@ -41,9 +41,9 @@ class MainActivity : ComponentActivity(){
     private lateinit var register: VerifyRegistratoin
 
     //Database class
-    private lateinit var db: SQLliteDB
-    private lateinit var userData:User
-    private lateinit var mp: MyUtils.AudioUtils
+    private var userData:User =User()
+    private var MyUtils: MyUtils = MyUtils()
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         //initialization and allows you to proceed with custom logic specific to activity
@@ -57,6 +57,16 @@ class MainActivity : ComponentActivity(){
         bindinglogin = RegistrationLoginBinding.inflate(layoutInflater)
         bindingregister = RegistrationPageBinding.inflate(layoutInflater)
         bindingmissingsensor = NonFunctionalAppBinding.inflate(layoutInflater)
+
+
+        MyUtils.init(
+            this,
+            applicationContext,
+            R.raw.bow_initialized,
+            R.raw.bow_verified,
+            R.raw.rukuperfomed,
+            R.raw.prayer_monitoring_start,
+            )
 
         //useful classes
         useful_classes_services()
@@ -103,8 +113,8 @@ class MainActivity : ComponentActivity(){
 
         if (!hasCrucialSensors){
             setContentView(bindingmissingsensor.root)
-            MyUtils.showToast(this,"Has gyroscope manager $hasGyroscope")
-            MyUtils.showToast(this,"Has Accelerometer manager $hasLinearAcc")
+            MyUtils.showToast("Has gyroscope manager $hasGyroscope")
+            MyUtils.showToast("Has Accelerometer manager $hasLinearAcc")
         }
     }
     fun register_loginStuff(){
@@ -126,19 +136,19 @@ class MainActivity : ComponentActivity(){
         // 2) rd to login page
         // 3) clear register page
         bindingregister.registerBtn.setOnClickListener(){
-            if(register.verified_user_data(this)) {
+            if(register.verified_user_data()) {
                 //User data
                 val name = bindingregister.regNameEt.text.toString().trim()
                 val email = bindingregister.regEmailEt.text.toString().trim().lowercase()
                 val pass = bindingregister.regPassEt.text.toString().trim()
                 val height = bindingregister.regHeightEt.text.toString().toDouble()
                 userData = User(name,email,pass,height)
-                if (!db.insertRegistrationUserData(userData)){
-                    MyUtils.showToast(this,"Registration successful")
+                if (!MyUtils.myDB().insertRegistrationUserData(userData)){
+                    MyUtils.showToast("Registration successful")
                     setContentView(bindinglogin.root)
                     register.clear_register()
-                    MyUtils.showToast(this,"Log in now :)")
-                } else MyUtils.showToast(this,"Failed: registering data into db!!!")
+                    MyUtils.showToast("Log in now :)")
+                } else MyUtils.showToast("Failed: registering data into db!!!")
             }
         }
 
@@ -146,20 +156,20 @@ class MainActivity : ComponentActivity(){
             val email_entered = bindinglogin.loginEmailEt.text.toString().trim().lowercase()
             val pass_entered = bindinglogin.loginPassEt.text.toString()
             userData = User(email_entered)
-            val userDetails_DB:User = db.login_details(userData)
+            val userDetails_DB:User = MyUtils.myDB().login_details(userData)
             // user details from DB != null means there are existing user email found for login
             if (!userDetails_DB.email.isNullOrEmpty()){
                 if (userDetails_DB.pass == pass_entered){
-                    MyUtils.showToast(this,"Login success")
+                    MyUtils.showToast("Login success")
                     //shows home screen for the user
                     homeStuff(userDetails_DB)
-                }else MyUtils.showToast(this,"Password does not match")
-            } else MyUtils.showToast(this,"Email not found")
+                }else MyUtils.showToast("Password does not match")
+            } else MyUtils.showToast("Email not found")
         }
 
         //read or delete data
         bindinglogin.readDataBtn.setOnClickListener(){
-            val data:MutableList<User> = db.readRegistrationUserData()
+            val data:MutableList<User> = MyUtils.myDB().readRegistrationUserData()
             bindinglogin.databaseTv.text = "ID NAME EMAIL HEIGHT PASS\n"
             for (i in 0 until data.size){
                 bindinglogin.databaseTv.append(
@@ -173,23 +183,23 @@ class MainActivity : ComponentActivity(){
         }
 
         bindinglogin.deleteDataBtn.setOnClickListener(){
-            db.deleteRegistrationUserData()
+            MyUtils.myDB().deleteRegistrationUserData()
         }
 
     }
 
 
     fun homeStuff(userDetails:User){
-        db.writableDatabase
+        MyUtils.myDB().writableDatabase
         //only for testing
-//        db.checkdb()
+//        MyUtils.myDB().checkdb()
         setContentView(bindinghome.root)
 
         //calling sensor with correct logged user details
         sensors = sensors(
             mSensorManager,
             userDetails,
-            db,
+            MyUtils.myDB(), //sqlite database
             binding.xGyroscope,
             binding.yGyroscope,
             binding.zGyroscope,
@@ -203,13 +213,13 @@ class MainActivity : ComponentActivity(){
             binding.actvPlacementAreaName,
             binding.spinnerSide,
             binding.spinnerPhoneElevation,
-            mp,
-            R.raw.rukuperfomed
+            MyUtils
         )
         bindinghome.tvWelcomeUser.text =
             "As-Salaam-Alaikum ${userDetails.name} 😁," +
             "\nWelcome back to Prayer Captious App!"
-        val countdown = object : CountDownTimer(3000, 1000) {
+        val seconds = 10 * 1000L //10 seconds
+        val countdown = object : CountDownTimer(seconds, 1000) {
 
             override fun onTick(millisUntilFinished: Long) {
                 bindinghome.tvCountdown.text = round(millisUntilFinished.toDouble() / 1000).toString()
@@ -218,6 +228,7 @@ class MainActivity : ComponentActivity(){
             override fun onFinish() {
                 setContentView(binding.root)
                 islistening=true
+                MyUtils.beginPrayerAudio()
                 sensorStuff()
             }
         }
@@ -243,6 +254,13 @@ class MainActivity : ComponentActivity(){
         sensors.graphSettings(binding.gyroGraph)
         sensors.graphSettings(binding.linearaccGraph)
 
+        //Auto starts after timer
+        sensors.initialise_motion()
+        sensors.initialise_elevation()
+        sensors.initialise_side()
+        sensors.initialise_placement()
+        sensors.registerListeners()
+
         binding.btnStopDataCollection.setOnClickListener(){
             sensors.unregisterListeners()
         }
@@ -253,6 +271,7 @@ class MainActivity : ComponentActivity(){
             sensors.initialise_side()
             sensors.initialise_placement()
             sensors.registerListeners()
+            MyUtils.beginPrayerAudio()
 
         }
 
@@ -303,13 +322,10 @@ class MainActivity : ComponentActivity(){
             bindingregister.regEmailEt,
             bindingregister.regPassEt,
             bindingregister.regConfirmPassEt,
-            bindingregister.regHeightEt
+            bindingregister.regHeightEt,
+            MyUtils
         )
 
-        //Initalizing Database
-        db = MyUtils.myDB(this)
-
-        mp = MyUtils.AudioUtils(this)
     }
 
 

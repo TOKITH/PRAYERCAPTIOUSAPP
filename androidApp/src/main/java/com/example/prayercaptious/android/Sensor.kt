@@ -27,6 +27,7 @@ import java.nio.DoubleBuffer
 import java.time.Instant
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
+import kotlin.math.absoluteValue
 import kotlin.time.*
 import kotlin.properties.Delegates
 
@@ -64,8 +65,7 @@ open class sensors(
     var placement: AutoCompleteTextView,
     var side: Spinner,
     var elevation: Spinner,
-    var mp:MyUtils.AudioUtils,
-    var rukuPerfomedAudio:Int
+    var myUtils: MyUtils
 ): SensorEventListener {
 
     //Sensors from sensor manager
@@ -77,8 +77,8 @@ open class sensors(
     val lightSensor: Sensor? = mSensorManager.getDefaultSensor(Sensor.TYPE_LIGHT)
 
     //quaternions to euler angle to avoid gimbal lock
-    var R:FloatArray= FloatArray(9)
-    val rotation_vector:FloatArray = FloatArray(4)
+    var R: FloatArray = FloatArray(9)
+    val rotation_vector: FloatArray = FloatArray(4)
 
 
     //gyrograph graph stuff
@@ -138,17 +138,25 @@ open class sensors(
     private var current_side: String = ""
     private var current_elevation = ""
 
-    private var room_light:Double = 0.0
-    private var stop_timer:Boolean = false
-    private var threshold:Double = 0.0
+    private var la_remapped = FloatArray(3)
+    private var g_remapped = FloatArray(3)
 
-    private var going_to_bow = false
-    private var bow_complete = false
-//    private var standing_to_prostration = false
-//    private var coming_up_from_prostrate = false
-//    private var going_down_to_prostrate = false
-//    private var standing_back_up = false
-//    private var stay_seated = false
+    private var room_light: Double = 0.0
+    private var stop_timer: Boolean = false
+    private var threshold: Double = 0.0
+    private var reset_threshold = 0.0
+
+    //Prayer position alerts
+
+    //stabalizer
+    private var stable:Boolean = false
+    private var stabalized:Boolean = false
+    //bow alerts
+    private var bow_init:Boolean = false
+    private var bow_verification:Boolean = false
+    private var bow_complete:Boolean = false
+    //prostration alerts
+    private var prostrationComplete:Boolean = false
 
     fun registerListeners() {
         //Initializing prayerId for data collection
@@ -183,32 +191,35 @@ open class sensors(
 
         //  registering magnetic field
         //  Sampling period is game with normal delay
-        mSensorManager.registerListener(
-            this,
-            magnometerSensor,
-            SensorManager.SENSOR_DELAY_GAME,
-            SensorManager.SENSOR_DELAY_NORMAL
-        )
+//        mSensorManager.registerListener(
+//            this,
+//            magnometerSensor,
+//            SensorManager.SENSOR_DELAY_GAME,
+//            SensorManager.SENSOR_DELAY_NORMAL
+//        )
 
         //  registering accelerametor sensor
         //  Sampling period is game with normal delay
-        mSensorManager.registerListener(
-            this,
-            acceleremetorSensor,
-            SensorManager.SENSOR_DELAY_GAME,
-            SensorManager.SENSOR_DELAY_NORMAL
-        )
+//        mSensorManager.registerListener(
+//            this,
+//            acceleremetorSensor,
+//            SensorManager.SENSOR_DELAY_GAME,
+//            SensorManager.SENSOR_DELAY_NORMAL
+//        )
 
-        mSensorManager.registerListener(
-            this,
-            lightSensor,
-            SensorManager.SENSOR_DELAY_FASTEST,
-            SensorManager.SENSOR_DELAY_FASTEST
-        )
+
+        //  registering light sensor
+//        mSensorManager.registerListener(
+//            this,
+//            lightSensor,
+//            SensorManager.SENSOR_DELAY_FASTEST,
+//            SensorManager.SENSOR_DELAY_FASTEST
+//        )
 
         collectData = true
         resetPressed = false
         deleteCurrentData = false
+
     }
 
     fun unregisterListeners() {
@@ -219,34 +230,26 @@ open class sensors(
 
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onSensorChanged(event: SensorEvent?) {
-        if (event?.sensor?.type == Sensor.TYPE_ROTATION_VECTOR)
-        {
+        if (event?.sensor?.type == Sensor.TYPE_ROTATION_VECTOR) {
             System.arraycopy(event.values, 0, rotation_vector, 0, 4)
         }
+        //Timestamp of data collected
+        timeStamp()
+
+        //Alert the user of their prayer position
+        prayerPositionAlert(g_remapped, la_remapped)
 
         //Gyroscope sensor
         if (event?.sensor?.type == Sensor.TYPE_GYROSCOPE) {
-            val g_remapped = adjustedSensorData(event,rotation_vector)
+            g_remapped = adjustedSensorData(event, rotation_vector)
             gyroData(event, g_remapped)
-            prayerPositionAlert(g_remapped)
         }
 
         //Linear acceleration sensor
-        if (event?.sensor?.type == Sensor.TYPE_LINEAR_ACCELERATION)
-        {
-            val la_remapped= adjustedSensorData(event,rotation_vector)
-//            val la_mag = magnitudeOfSensor(event)
-            linearaccData(event,la_remapped)
+        if (event?.sensor?.type == Sensor.TYPE_LINEAR_ACCELERATION) {
+            la_remapped = adjustedSensorData(event, rotation_vector)
+            linearaccData(event, la_remapped)
         }
-
-        //Light sensor
-//        if (event?.sensor?.type == Sensor.TYPE_LIGHT)
-//        {
-//            linearaccData(event,floatArrayOf(0f,0f,0f))
-//            prayerPositionAlert(event)
-//        }
-
-        timeStamp()
     }
 
     override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {
@@ -254,7 +257,7 @@ open class sensors(
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
-    fun timeStamp():String{
+    fun timeStamp(): String {
         val timestamps = DateTimeFormatter
             .ofPattern("dd-MM-yyyy HH:mm:ss.SSSSSS")
             .withZone(ZoneOffset.UTC)
@@ -269,7 +272,7 @@ open class sensors(
     //  3) Updates text label of x,y,z
     //  4) Adds shake meter progressbar and shows shake acceleration
     @RequiresApi(Build.VERSION_CODES.O)
-    private fun gyroData(event: SensorEvent?,g_remapped_values:FloatArray){
+    private fun gyroData(event: SensorEvent?, g_remapped_values: FloatArray) {
 
         val xg: Float = event!!.values[0]
         val yg: Float = event.values[1]
@@ -279,9 +282,9 @@ open class sensors(
 //        val y:Double = String.format("%.2f", yg).toDouble()
 //        val z:Double = String.format("%.2f", zg).toDouble()
 
-        val x:Double = String.format("%.2f", g_remapped_values[0]).toDouble()
-        val y:Double = String.format("%.2f", g_remapped_values[1]).toDouble()
-        val z:Double = String.format("%.2f", g_remapped_values[2]).toDouble()
+        val x: Double = String.format("%.2f", g_remapped_values[0]).toDouble()
+        val y: Double = String.format("%.2f", g_remapped_values[1]).toDouble()
+        val z: Double = String.format("%.2f", g_remapped_values[2]).toDouble()
 
 
         if (collectData) {
@@ -303,45 +306,49 @@ open class sensors(
                         "\tside: ${current_side}" +
                         "\televation: ${current_elevation}"
             )
-            val insertGyroData= GyroSensorData(user.id,prayerid,timeStamp(),x,y,z,current_motion,current_placement,current_side,current_elevation)
+            val insertGyroData = GyroSensorData(
+                user.id,
+                prayerid,
+                timeStamp(),
+                x,
+                y,
+                z,
+                current_motion,
+                current_placement,
+                current_side,
+                current_elevation
+            )
             db.insertGyroData(insertGyroData)
         }
 
-        appendGyroData(x,y,z)
+        appendGyroData(x, y, z)
 
-        updateTextAndColourGyro(x,y,z)
-
+        updateTextAndColourGyro(x, y, z)
 
     }
 
-    private fun appendGyroData(x:Double,y:Double,z:Double){
+    private fun appendGyroData(x: Double, y: Double, z: Double) {
         //resets graph after a threshold to keep app efficient with saving memory
-        if (pointsplottedGyro > maxplots_gyro){
-            resetGraph(gyroXseries,gyroYseries,gyroZseries,graphg)
-            pointsplottedGyro=0.0
+        if (pointsplottedGyro > maxplots_gyro) {
+            resetGraph(gyroXseries, gyroYseries, gyroZseries, graphg)
+            pointsplottedGyro = 0.0
         }
 
         //points plotted is x axis
-        pointsplottedGyro+=1.0
+        pointsplottedGyro += 1.0
 
         //x axis
-        gyroXseries.appendData(DataPoint(pointsplottedGyro,(x)),true,pointsplottedGyro.toInt())
-//        gyroXseries.appendData(DataPoint(pointsplottedGyro,(x)),true,pointsplottedGyro.toInt()) //for magnitude
+        gyroXseries.appendData(DataPoint(pointsplottedGyro, (x)), true, pointsplottedGyro.toInt())
 
         //y axis
-        gyroYseries.appendData(DataPoint(pointsplottedGyro,(y)),true,pointsplottedGyro.toInt())
+        gyroYseries.appendData(DataPoint(pointsplottedGyro, (y)), true, pointsplottedGyro.toInt())
 
         // z axis
-        gyroZseries.appendData(DataPoint(pointsplottedGyro,(z)),true,pointsplottedGyro.toInt())
+        gyroZseries.appendData(DataPoint(pointsplottedGyro, (z)), true, pointsplottedGyro.toInt())
     }
 
-    //linearaccData:
-    //  1) Extracts x,y,z values of linear acceleration sensor
-    //  2) Appends x,y,z values of linear acceleration data real time into series of data
-    //  3) Updates text label of x,y,z
-    //  4) Adds shake meter progressbar and shows shake acceleration
     @RequiresApi(Build.VERSION_CODES.O)
-    private fun linearaccData(event: SensorEvent?, remapped_event: FloatArray){
+    private fun linearaccData(event: SensorEvent?, remapped_event: FloatArray) {
 
         val xla: Float = event!!.values[0]
         val yla: Float = event.values[1]
@@ -351,9 +358,9 @@ open class sensors(
 //        val y:Double = String.format("%.2f", yla).toDouble()
 //        val z:Double = String.format("%.2f", zla).toDouble()
 
-        val x:Double = String.format("%.2f", remapped_event[0]).toDouble()
-        val y:Double = String.format("%.2f", remapped_event[1]).toDouble()
-        val z:Double = String.format("%.2f", remapped_event[2]).toDouble()
+        val x: Double = String.format("%.2f", remapped_event[0]).toDouble()
+        val y: Double = String.format("%.2f", remapped_event[1]).toDouble()
+        val z: Double = String.format("%.2f", remapped_event[2]).toDouble()
 
 //        val x:Double = String.format("%.2f", remapped_event).toDouble() // for magnitude only
 
@@ -372,41 +379,66 @@ open class sensors(
 //                        "\televation: ${current_elevation}"
 //            )
 
-            Log.d("linearData",
-            " x: ${x}" +
-                    " y: ${y}" +
-                    " z: ${z}")
-            val insertLinearaccSensorData= LinearaccSensorData(user.id,prayerid,timeStamp(),x,y,z,current_motion,current_placement,current_side,current_elevation)
+            Log.d(
+                "linearData",
+                " x: ${x}" +
+                        " y: ${y}" +
+                        " z: ${z}"
+            )
+            val insertLinearaccSensorData = LinearaccSensorData(
+                user.id,
+                prayerid,
+                timeStamp(),
+                x,
+                y,
+                z,
+                current_motion,
+                current_placement,
+                current_side,
+                current_elevation
+            )
             db.insertLinAccData(insertLinearaccSensorData)
         }
 
-        appendLinearaccData(x,y,z)
+        appendLinearaccData(x, y, z)
 
-        updateTextAndColourLinearacc(x,y,z)
+        updateTextAndColourLinearacc(x, y, z)
     }
 
-    private fun appendLinearaccData(x:Double,y:Double,z:Double){
+    private fun appendLinearaccData(x: Double, y: Double, z: Double) {
         //resets graph after a threshold to keep app efficient with saving memory
-        if (pointsplottedLinearacc > maxplots_linearacc){
-            resetGraph(linearaccXseries,linearaccYseries,linearaccZseries,graphla)
-            pointsplottedLinearacc=0.0
+        if (pointsplottedLinearacc > maxplots_linearacc) {
+            resetGraph(linearaccXseries, linearaccYseries, linearaccZseries, graphla)
+            pointsplottedLinearacc = 0.0
         }
         //points plotted is x axis
-        pointsplottedLinearacc+=1.0
+        pointsplottedLinearacc += 1.0
 
         //x axis
-        linearaccXseries.appendData(DataPoint(pointsplottedLinearacc,(x)),true,pointsplottedLinearacc.toInt())
+        linearaccXseries.appendData(
+            DataPoint(pointsplottedLinearacc, (x)),
+            true,
+            pointsplottedLinearacc.toInt()
+        )
 
         //y axis
-        linearaccYseries.appendData(DataPoint(pointsplottedLinearacc,(y)),true,pointsplottedLinearacc.toInt())
+        linearaccYseries.appendData(
+            DataPoint(pointsplottedLinearacc, (y)),
+            true,
+            pointsplottedLinearacc.toInt()
+        )
 
         // z axis
-        linearaccZseries.appendData(DataPoint(pointsplottedLinearacc,(z)),true,pointsplottedLinearacc.toInt())
+        linearaccZseries.appendData(
+            DataPoint(pointsplottedLinearacc, (z)),
+            true,
+            pointsplottedLinearacc.toInt()
+        )
 
     }
 
     //PlotSeriesData: plots realtime appended data into graph
-    fun plotSeriesData(){
+    fun plotSeriesData() {
         graphg.addSeries(gyroXseries)
         graphg.addSeries(gyroYseries)
         graphg.addSeries(gyroZseries)
@@ -417,30 +449,30 @@ open class sensors(
 
     }
 
-    fun graphSettings(graph:GraphView){
+    fun graphSettings(graph: GraphView) {
         graph.viewport.isScrollable = true
-        graph.viewport.setMaxY(10.0)
-        graph.viewport.setMinY(-10.0)
+        graph.viewport.setMaxY(0.2)
+        graph.viewport.setMinY(-0.2)
         graph.viewport.setMaxX(pointsplottedGyro)
-        graph.viewport.setMinX(pointsplottedGyro-200)
+        graph.viewport.setMinX(pointsplottedGyro - 200)
         graph.viewport.isXAxisBoundsManual = true
         graph.viewport.isYAxisBoundsManual = true
 
     }
 
-    fun seriesColour(){
+    fun seriesColour() {
         //Gyroscope series
-        gyroXseries.color=Color.GREEN
-        gyroYseries.color=Color.RED
-        gyroZseries.color= Color.YELLOW
+        gyroXseries.color = Color.GREEN
+        gyroYseries.color = Color.RED
+        gyroZseries.color = Color.YELLOW
 
         //Linear acceleration series
-        linearaccXseries.color=Color.GREEN
-        linearaccYseries.color=Color.RED
-        linearaccZseries.color= Color.YELLOW
+        linearaccXseries.color = Color.GREEN
+        linearaccYseries.color = Color.RED
+        linearaccZseries.color = Color.YELLOW
     }
 
-    private fun updateTextAndColourGyro(x:Double, y:Double, z:Double){
+    private fun updateTextAndColourGyro(x: Double, y: Double, z: Double) {
 
         x_g.text = ("x_gyro = $x")
         x_g.setTextColor(Color.parseColor("#00FF00")) // green
@@ -451,7 +483,7 @@ open class sensors(
 
     }
 
-    private fun updateTextAndColourLinearacc(x:Double, y:Double, z:Double){
+    private fun updateTextAndColourLinearacc(x: Double, y: Double, z: Double) {
 
         x_la.text = ("x_lin_acc = $x")
         x_la.setTextColor(Color.parseColor("#00FF00")) // green
@@ -460,12 +492,13 @@ open class sensors(
         z_la.text = ("z_lin_acc = $z")
         z_la.setTextColor(Color.parseColor("#FFFF00")) //yellow
     }
+
     private fun resetGraph(
-       seriesx: LineGraphSeries<DataPoint>,
-       seriesy: LineGraphSeries<DataPoint>,
-       seriesz: LineGraphSeries<DataPoint>,
-       graph: GraphView
-    ){
+        seriesx: LineGraphSeries<DataPoint>,
+        seriesy: LineGraphSeries<DataPoint>,
+        seriesz: LineGraphSeries<DataPoint>,
+        graph: GraphView
+    ) {
         //remove full visual graph plots
         graph.removeAllSeries()
 
@@ -480,38 +513,38 @@ open class sensors(
         graph.addSeries(seriesz)
     }
 
-    fun resetGraphData(){
+    fun resetGraphData() {
 
-        if (!collectData && deleteCurrentData){
+        if (!collectData && deleteCurrentData) {
             resetPressed = true
         }
 
         //resetting data while collecting a set of data
-        if (collectData){
-            prayerid+= 1
+        if (collectData) {
+            prayerid += 1
             this.unregisterListeners()
             resetPressed = true
         }
 
         //incrementing prayer id by 1 while data collection is at pause
         // and the number stays incremented by 1 until data collection starts again meaning pressing reset multiple times will not increment again
-        if (!collectData && !resetPressed){
-            prayerid+=1
+        if (!collectData && !resetPressed) {
+            prayerid += 1
             resetPressed = true
         }
         //resets data --- make redundant once complete collection data.
-        resetGraph(linearaccXseries,linearaccYseries,linearaccZseries,graphla)
-        pointsplottedLinearacc=0.0
-        resetGraph(gyroXseries,gyroYseries,gyroZseries,graphg)
-        pointsplottedGyro=0.0
+        resetGraph(linearaccXseries, linearaccYseries, linearaccZseries, graphla)
+        pointsplottedLinearacc = 0.0
+        resetGraph(gyroXseries, gyroYseries, gyroZseries, graphg)
+        pointsplottedGyro = 0.0
         this.timestamp.text = ("PrayerID: $prayerid | userID: ${user.id}")
     }
 
 
-    fun initializePrayerID(){
+    fun initializePrayerID() {
 
         //+1 to ensure last prayerid is not used to collect data
-        prayerid = db.getPrayerID(user)+1
+        prayerid = db.getPrayerID(user) + 1
         gyroDataDB.userID = user.id
         linaccDataDB.userID = user.id
         gyroDataDB.prayerID = prayerid
@@ -521,40 +554,42 @@ open class sensors(
 
     }
 
-    fun deleteCurrentData(){
-        db.deleteCurrentDataCollected(user.id,prayerid)
+    fun deleteCurrentData() {
+        db.deleteCurrentDataCollected(user.id, prayerid)
         //resets data -- make redundant once complete collection data.
-        resetGraph(linearaccXseries,linearaccYseries,linearaccZseries,graphla)
-        pointsplottedLinearacc=0.0
-        resetGraph(gyroXseries,gyroYseries,gyroZseries,graphg)
-        pointsplottedGyro=0.0
+        resetGraph(linearaccXseries, linearaccYseries, linearaccZseries, graphla)
+        pointsplottedLinearacc = 0.0
+        resetGraph(gyroXseries, gyroYseries, gyroZseries, graphg)
+        pointsplottedGyro = 0.0
         deleteCurrentData = true
         this.timestamp.text = ("PrayerID: $prayerid | userID: ${user.id}")
     }
 
-    fun initialise_motion():String{
+    fun initialise_motion(): String {
         current_motion = motion.selectedItem.toString()
         return current_motion
 
     }
 
-    fun initialise_placement():String{
+    fun initialise_placement(): String {
         current_placement = placement.text.toString()
         return current_placement
 
     }
-    fun initialise_side():String{
+
+    fun initialise_side(): String {
         current_side = side.selectedItem.toString()
         return current_side
 
     }
-    fun initialise_elevation():String{
+
+    fun initialise_elevation(): String {
         current_elevation = elevation.selectedItem.toString()
         return current_elevation
 
     }
 
-    fun adjustedSensorData(event: SensorEvent?,rotation_vector:FloatArray): FloatArray {
+    fun adjustedSensorData(event: SensorEvent?, rotation_vector: FloatArray): FloatArray {
         //Sensor raw euler x,y,z values (gyroscope data in rad/s)
         val x: Float = event?.values!![0]
         val y: Float = event.values[1]
@@ -596,29 +631,91 @@ open class sensors(
         return transformedData
     }
 
-    private fun prayerPositionAlert(sensorValues: FloatArray) {
+    private fun prayerPositionAlert(gyroValues: FloatArray, linaccValues: FloatArray) {
         //6points/sec for light
         //50points/sec for gyro/lin acc
-        val x = sensorValues[0]
-        val y = sensorValues[1]
-        val z = sensorValues[2]
+        val xg = gyroValues[0]
+        val yg = gyroValues[1]
+        val zg = gyroValues[2]
 
-        if (y > 0.4 ){
-            going_to_bow = true
+        val xla = linaccValues[0]
+        val yla = linaccValues[1]
+        val zla = linaccValues[2]
+
+        rukuAlerts(gyroValues, linaccValues)
+        prostrationAlerts(gyroValues,linaccValues)
+
+    }
+
+    private fun rukuAlerts(gyroValues: FloatArray, linaccValues: FloatArray):Boolean{
+        //unpacking values
+        val xg = gyroValues[0]
+        val yg = gyroValues[1]
+        val zg = gyroValues[2]
+
+        val xla = linaccValues[0]
+        val yla = linaccValues[1]
+        val zla = linaccValues[2]
+
+        if (!bow_init && !bow_complete && pointsplottedGyro > reset_threshold
+            && (
+                (yg.absoluteValue > 0.4 && xg.absoluteValue > 0.23)
+                || (yg.absoluteValue > 0.23 && xg.absoluteValue > 0.4))
+        ) {
+            bow_init = true
+            reset_threshold = 0.0
+//                myUtils.mpPause()
+            myUtils.bowInitializedAudio()
+            threshold = pointsplottedGyro
         }
-        if (going_to_bow && y<-0.25){
-            going_to_bow = false
-            bow_complete = true
-            mp.mpRelease() //Release before creating another instance
-            mp.playRawAudio(rukuPerfomedAudio)
+
+
+        val stabalizer = 0.05
+
+        stable = ((yg < stabalizer && yg > -stabalizer)
+                && (xg < stabalizer && xg > -stabalizer)
+                && (zg < stabalizer && zg > -stabalizer)
+                && (xla < stabalizer && xla > -stabalizer)
+                && (yla < stabalizer && yla > -stabalizer)
+                && (zla < stabalizer && zla > -stabalizer))
+
+        if (bow_init && pointsplottedGyro > threshold + 175.0 && stable) {
+            stabalized = true
         }
 
+        if (stabalized && bow_init && !bow_verification
+            && ((yg < -0.2 || xg.absoluteValue < -0.2)
+            || (yg < -0.2 || -zg.absoluteValue < -0.2))
+        ) {
+            bow_verification = true
+//            myUtils.mpPause()
+            myUtils.bowVerifiedAudio()
+        }
 
+        if (bow_verification && bow_init
+            && (yg < -0.2)
+        ) {
+//            bow_complete = true
+            bow_init = false
+            bow_verification = false
+            stabalized = false
+            reset_threshold = pointsplottedGyro + 200.0
+//            myUtils.mpPause()
+            myUtils.rukuPerformedAudio()
+        }
+        return bow_complete
+    }
 
+    private fun prostrationAlerts(gyroValues: FloatArray, linaccValues: FloatArray):Boolean {
+        //unpacking values
+        val xg = gyroValues[0]
+        val yg = gyroValues[1]
+        val zg = gyroValues[2]
 
-        //For audio
-//        mp.mpRelease() //Release before creating another instance
-//        mp.playRawAudio(rukuPerfomedAudio)
+        val xla = linaccValues[0]
+        val yla = linaccValues[1]
+        val zla = linaccValues[2]
 
+        return prostrationComplete
     }
 }
