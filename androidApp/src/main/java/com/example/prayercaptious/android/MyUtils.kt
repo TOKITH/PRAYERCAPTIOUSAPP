@@ -22,12 +22,16 @@ class MyUtils()
     private lateinit var bowVerified: MediaPlayer
     private lateinit var rukuperformed: MediaPlayer
     private lateinit var being_prayer_monitor: MediaPlayer
+    private lateinit var prostrationInitialized: MediaPlayer
+    private lateinit var rukuMissed: MediaPlayer
     var mp:MediaPlayer = MediaPlayer()
     fun init(context: Context, applicationContext:Context,
              resID1: Int,
              resID2: Int,
              resID3: Int,
-             resID4: Int) {
+             resID4: Int,
+             resID5: Int,
+             resID6: Int,) {
         this.context = context
         this.applicationContext = applicationContext
 
@@ -51,8 +55,34 @@ class MyUtils()
             Uri.parse("android.resource://${context.packageName}/${resID4}")
         )
 
+        prostrationInitialized = MediaPlayer.create(
+            applicationContext,
+            Uri.parse("android.resource://${context.packageName}/${resID5}")
+        )
+
+        rukuMissed = MediaPlayer.create(
+            applicationContext,
+            Uri.parse("android.resource://${context.packageName}/${resID6}")
+        )
+
     }
 
+    fun rukuMissed(){
+        try {
+            rukuMissed?.seekTo(0)
+            rukuMissed?.start()
+        } catch (e:IOException){
+            e.printStackTrace()
+        }
+    }
+    fun prostrationInitializedAudio(){
+        try {
+            prostrationInitialized?.seekTo(0)
+            prostrationInitialized?.start()
+        } catch (e:IOException){
+            e.printStackTrace()
+        }
+    }
     fun bowInitializedAudio(){
         try {
             bowInitialized?.seekTo(0)
@@ -69,7 +99,6 @@ class MyUtils()
         } catch (e:IOException){
             e.printStackTrace()
         }
-        Log.d("audioDebug",bowVerified.toString())
     }
 
     fun rukuPerformedAudio(){
@@ -106,6 +135,8 @@ class MyUtils()
         bowInitialized?.release()
         bowVerified?.release()
         rukuperformed?.release()
+        prostrationInitialized?.release()
+        rukuMissed?.release()
     }
 
     fun showToast(message: String) {

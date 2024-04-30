@@ -62,10 +62,15 @@ class MainActivity : ComponentActivity(){
         MyUtils.init(
             this,
             applicationContext,
+            //ruku audios
             R.raw.bow_initialized,
             R.raw.bow_verified,
             R.raw.rukuperfomed,
+            //prostration audios
             R.raw.prayer_monitoring_start,
+            //mistake alert audios
+            R.raw.prostration_initialized,
+            R.raw.ruku_missed,
             )
 
         //useful classes
