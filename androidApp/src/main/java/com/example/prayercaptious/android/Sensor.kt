@@ -145,23 +145,37 @@ open class sensors(
     private var threshold: Double = 0.0
     private var reset_threshold = 0.0
     private var mistake_threshold = 0.0
+    private var mistake_threshold_bow = 0.0
+    private var mistake_threshold_prostration = 0.0
+    private var standing_time = 0.0
 
     //Prayer position alerts
-
-    //stabalizer
-    private var stable:Boolean = false
-    private var stablePoints = 0.0
-    private var stabalized:Boolean = false
+    //standing
+    private var standing = false
     //bow alerts
+    private var bow_prostrate_detection:Boolean = false
     private var bow_init:Boolean = false
     private var bow_verification:Boolean = false
+    private var bow_completion_decision:Boolean = false
+    private var bow_half_complete:Boolean = false
     private var bow_complete:Boolean = false
+    private var ruku_missed = false
     //prostration alerts
     private var prostation_init:Boolean = false
     private var prostrationComplete:Boolean = false
+    private var prostration_one_init:Boolean = false
+    private var prostrationOneComplete:Boolean = false
+    private var prostration_one_complete_not_sitting = false
+    private var prostration_two_init:Boolean = false
+    private var prostrationTwoComplete:Boolean = false
+    private var prostration_three_init:Boolean = false
+    private var prostration_excess = false
 
-    //mistake alerts
-    private var ruku_missed = false
+    //position_init
+    private var position_init: Boolean = false
+    //rakat status
+    private var rakat_performed: Int = 0
+    private val rakat_requested: Int = 1
 
     fun registerListeners() {
         //Initializing prayerId for data collection
@@ -654,60 +668,84 @@ open class sensors(
 
         // Checks if bow is initialized
         // Bow initialization happens during prostration initialization ( hence checking if bow is missed or performed )
-        if(!bow_init && !prostation_init &&
-            (yg.absoluteValue > 0.3 && yg.absoluteValue < 0.9)
-            && (xg.absoluteValue > 0.3 && xg.absoluteValue < 0.9)
+        if(!bow_prostrate_detection &&
+            (yg.absoluteValue > 0.25 && yg.absoluteValue < 0.9)
+            && (xg.absoluteValue > 0.25 && xg.absoluteValue < 0.9)
             && (xla.absoluteValue > 0.9 && xla.absoluteValue < 2)
             ){
-            bow_init = true
+            bow_prostrate_detection = true
             mistake_threshold = 0.0
             mistake_threshold = pointsplottedGyro + 50.0
         }
 
         //Bow performed after bow initialization
-        if (bow_init && pointsplottedGyro > mistake_threshold && !prostation_init && threshold < 1.0){
+        if (bow_prostrate_detection && pointsplottedGyro > mistake_threshold && !prostation_init && !position_init){
             bow_init = true
-            prostation_init = false
             myUtils.bowInitializedAudio()
 
-            threshold = 1.0
+            position_init = true
 
             reset_threshold = 0.0
-            reset_threshold = pointsplottedGyro + 350.0
+            reset_threshold = pointsplottedGyro + 2000.0
         }
 
         //Bow missed and prostration is initialized after bow initialization
-        if (bow_init && pointsplottedGyro < mistake_threshold && !prostation_init &&
-            (xg.absoluteValue > 1.25 && yg.absoluteValue > 1.25) || (xg.absoluteValue > 1.25 && zg.absoluteValue > 1.25)
-            && (zla.absoluteValue > 2 && yla.absoluteValue > 2)
-            && threshold < 1.0
+        if (bow_prostrate_detection && pointsplottedGyro < mistake_threshold && !prostation_init &&
+            (xg.absoluteValue > 1.1 && yg.absoluteValue > 1.1) || (xg.absoluteValue > 1.1 && zg.absoluteValue > 1.1)
+            && (zla.absoluteValue > 1.5 && yla.absoluteValue > 1.5)
+            && !position_init
             ){
-            myUtils.rukuMissed()
-            bow_init = false
             prostation_init = true
+            mistake_threshold_prostration = pointsplottedGyro + 100.0
+            myUtils.rukuMissed()
 
-            threshold = 1.0
+            position_init = true
 
             reset_threshold = 0.0
-            reset_threshold = pointsplottedGyro + 350.0
+            reset_threshold = pointsplottedGyro + 2000.0
 
+            prostrationAlerts(gyroValues, linaccValues) // the person is prostrating
+
+        }
+
+
+        //calls ruku alert once initiated
+        if (position_init && bow_init){
+            rukuAlerts(gyroValues, linaccValues) // the person is bowing
+        }
+
+        //calls prostration alert once initiated
+        if (position_init && prostation_init){
+            prostrationAlerts(gyroValues, linaccValues) // the person is bowing
         }
 
         //resets for another round of testing
-        if (threshold > 0.0 && pointsplottedGyro > reset_threshold){
+        if (position_init && pointsplottedGyro > reset_threshold){
             myUtils.beginPrayerAudio()
-            threshold = 0.0
+            //initial movement from standing detection
+            bow_prostrate_detection = false
+            //initializing reset
+            position_init = false
             bow_init = false
             prostation_init = false
+            //completion reset
+            bow_complete = false
+            bow_half_complete = false
+            bow_completion_decision = false
+            //completion reset prostration
+            prostation_init = false
+            prostrationOneComplete = false
+            prostration_one_complete_not_sitting = false
+            prostration_two_init = false
+            prostrationTwoComplete = false
+            prostration_excess = false
+            //standing
+            standing = false
         }
-
-//        if (prostation_init){
-//            myUtils.prostrationInitializedAudio()
-//        }
 
     }
 
-    private fun rukuAlerts(gyroValues: FloatArray, linaccValues: FloatArray):Boolean{
+    private fun rukuAlerts(gyroValues: FloatArray, linaccValues: FloatArray):Boolean {
         //unpacking values
         val xg = gyroValues[0]
         val yg = gyroValues[1]
@@ -717,54 +755,36 @@ open class sensors(
         val yla = linaccValues[1]
         val zla = linaccValues[2]
 
-        if (!bow_init && !bow_complete && pointsplottedGyro > reset_threshold
-            && (
-                (yg.absoluteValue > 0.2 && xg.absoluteValue > 0.2 && xla.absoluteValue > 0.3)
-//                || (yg.absoluteValue > 0.23 && xg.absoluteValue > 0.4)
-               )
-        ) {
-            bow_init = true
-            ruku_missed = false //temp for testing
-            reset_threshold = 0.0
-//                myUtils.mpPause()
-            myUtils.bowInitializedAudio()
-            threshold = pointsplottedGyro
+        //calls prostration algorithm once bow is complete or half complete
+        if (bow_complete || bow_half_complete){
+            prostrationAlerts(gyroValues,linaccValues)
         }
 
-
-        val stabalizer = 0.1
-
-        stable = ((yg.absoluteValue < stabalizer)
-                && (xg.absoluteValue < stabalizer)
-                && (zg.absoluteValue < stabalizer))
-        if (bow_init && stable){
-            stablePoints+=1.0
+        //half bow and full bow decision threshold time creation
+        if (!bow_complete  && !bow_half_complete && yg < -0.25 && xla.absoluteValue > 0.9 && !bow_completion_decision) {
+            mistake_threshold_bow = pointsplottedGyro + 25.0
+            bow_completion_decision = true
         }
-        if (stablePoints > 1000.0) {
-            stabalized = true
-            stablePoints = 0.0
-        }
-
-        if (stabalized && bow_init && !bow_verification
-            && ((yg < -0.2 || xg.absoluteValue < -0.2)
-            || (yg < -0.2 || -zg.absoluteValue < -0.2))
-        ) {
-            bow_verification = true
-//            myUtils.mpPause()
-//            myUtils.bowVerifiedAudio()
+        // detects if bow is half complete
+        if (bow_init && !bow_complete && !bow_half_complete
+            && (pointsplottedGyro < mistake_threshold_bow && bow_completion_decision)
+            && ((xg.absoluteValue > 0.8 && yg.absoluteValue > 0.8) ||
+                    (xg.absoluteValue > 0.8 && zg.absoluteValue > 0.8))
+            && (zla.absoluteValue > 1.5 && yla.absoluteValue > 1.5)){
+            bow_half_complete = true
+            prostation_init = true
+            mistake_threshold_prostration = pointsplottedGyro + 25.0
+            myUtils.rukuMissed() // bow half complete audio
         }
 
-        if (bow_verification && bow_init
-            && (yg < -0.2)
-        ) {
-//            bow_complete = true
-            bow_init = false
-            bow_verification = false
-            stabalized = false
-            reset_threshold = pointsplottedGyro + 200.0
-//            myUtils.mpPause()
-//            myUtils.rukuPerformedAudio()
+        // detects if bow is fully complete
+        if (bow_init && !bow_complete && !bow_half_complete
+            && (pointsplottedGyro > mistake_threshold_bow && bow_completion_decision)
+            ){
+            bow_complete = true
+            myUtils.rukuPerformedAudio()
         }
+
         return bow_complete
     }
 
@@ -778,21 +798,66 @@ open class sensors(
         val yla = linaccValues[1]
         val zla = linaccValues[2]
 
-        if (xg.absoluteValue > 1.0 || yg.absoluteValue > 1.0
-            && (xla.absoluteValue > 4.0 || yla.absoluteValue > 4.0)) {
+        // runs only after bow is complete
+        if (!prostation_init
+            && ((xg.absoluteValue > 1 && yg.absoluteValue > 1) || (xg.absoluteValue > 1 && zg.absoluteValue > 1))
+            && (xla.absoluteValue > 2.5 || yla.absoluteValue > 2.5)) {
             prostation_init = true
-//            myUtils.prostrationInitializedAudio()
+            myUtils.prostrationInitializedAudio()
+
+            mistake_threshold_prostration = pointsplottedGyro + 75.0 //time it takes to prostrate
         }
+
+        //might have to change algorithms here//
+
+        // checking if going to prostration or coming back up from prostration
+
+        //first prostration completion
+        if (prostation_init && !prostrationOneComplete
+            && pointsplottedGyro > mistake_threshold_prostration
+            && (xg < -0.7)
+            ){
+            prostrationOneComplete = true
+            myUtils.prostrationOnePerformed()
+            mistake_threshold_prostration = pointsplottedGyro + 50.0
+        }
+
+        //if the person is not sitting he is probably standing up, so need to add flags to identify mistake //
+        if (prostrationOneComplete && !prostrationTwoComplete && !prostration_one_complete_not_sitting &&
+            (zg.absoluteValue > 1.7 && xg.absoluteValue > 1.7)){
+            prostration_one_complete_not_sitting = true
+            standing = true
+            myUtils.prostrationMissedOne()
+        }
+//        //second prostration complete
+//        if (prostrationOneComplete && !prostration_one_complete_not_sitting && !prostrationTwoComplete && pointsplottedGyro > mistake_threshold_prostration
+//            && (xg < -0.7)){
+//            prostrationTwoComplete = true
+//            myUtils.prostrationTwoPerformed()
+//            mistake_threshold_prostration = pointsplottedGyro + 50.0
+//        }
+//
+//        //standing up after prostration two
+//        if (prostrationTwoComplete && !standing && (zg.absoluteValue > 1.5)){
+//            standing = true
+//            standing_time = pointsplottedGyro + 200
+//            myUtils.bowVerifiedAudio() //standing audio
+//        }
+//
+//        //doing excess prostration detection
+//        if (prostrationTwoComplete && !standing && pointsplottedGyro > mistake_threshold_prostration && !prostration_excess &&
+//            (xg < -0.7)){
+//            prostration_excess = true
+//            myUtils.prostrationExcess()
+//        }
+//
+//        //standing up after prostration two
+//        if (prostration_excess && !standing && (zg.absoluteValue > 1.5)){
+//            standing = true
+//            standing_time = pointsplottedGyro + 200
+//            myUtils.bowVerifiedAudio() //standing audio
+//        }
 
         return prostrationComplete
-    }
-
-    private fun mistakeAlert(){
-
-        //Detects if bow is missed before prostrating
-        if (bow_init && prostation_init && !ruku_missed){
-            ruku_missed = true
-            myUtils.rukuMissed()
-        }
     }
 }

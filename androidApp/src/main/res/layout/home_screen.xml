@@ -13,6 +13,15 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:textSize="20sp"/>
+
+    <!--Button for camera analyzer -->
+    <Button
+        android:id="@+id/btnCameraAnalyzer"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/cameraanalyzer_startbtn"
+        android:textSize="20sp"
+        android:layout_weight="1"/>
     <Button
         android:id="@+id/btnTimerStart"
         android:layout_width="match_parent"

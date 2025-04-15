@@ -1,21 +1,32 @@
 package com.example.prayercaptious.android
 
 import android.content.Context
+import android.graphics.Bitmap
 import android.hardware.Sensor
 import android.hardware.SensorManager
-import android.media.MediaPlayer
-import android.net.Uri
 import android.os.Bundle
 import android.os.CountDownTimer
 import android.util.Log
 import android.widget.ArrayAdapter
 import androidx.activity.ComponentActivity
+import androidx.camera.core.CameraSelector
+import androidx.camera.core.ImageAnalysis
+import androidx.camera.core.Preview
+import androidx.camera.lifecycle.ProcessCameraProvider
+import androidx.core.content.ContextCompat
+import com.example.prayercaptious.android.FaceDetection.Companion.TAG
 import com.example.prayercaptious.android.databinding.ActivityMainBinding
+import com.example.prayercaptious.android.databinding.CameraViewBinding
 import com.example.prayercaptious.android.databinding.HomeScreenBinding
 import com.example.prayercaptious.android.databinding.NonFunctionalAppBinding
 import com.example.prayercaptious.android.databinding.RegistrationLoginBinding
 import com.example.prayercaptious.android.databinding.RegistrationPageBinding
-import java.text.DecimalFormat
+import com.google.mlkit.vision.face.Face
+import com.google.mlkit.vision.face.FaceDetector
+import com.google.mlkit.vision.face.FaceDetectorOptions
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
+import javax.inject.Inject
 import kotlin.math.round
 
 
@@ -29,6 +40,7 @@ class MainActivity : ComponentActivity(){
     private lateinit var bindinghome: HomeScreenBinding
     private lateinit var bindinglogin: RegistrationLoginBinding
     private lateinit var bindingregister: RegistrationPageBinding
+    public lateinit var bindingcameraview: CameraViewBinding
 
     //It provides methods to access and manage various sensors available on android
     private lateinit var mSensorManager: SensorManager
@@ -44,6 +56,14 @@ class MainActivity : ComponentActivity(){
     private var userData:User =User()
     private var MyUtils: MyUtils = MyUtils()
 
+    // Face detection class
+    @Inject
+    lateinit var faceDetector: FaceDetector
+    private lateinit var faceDetection: FaceDetection
+//    @Inject
+//    lateinit var cameraExecutor: CameraExecutor
+    private var cameraExecutor : ExecutorService = Executors.newSingleThreadExecutor()
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         //initialization and allows you to proceed with custom logic specific to activity
@@ -57,6 +77,7 @@ class MainActivity : ComponentActivity(){
         bindinglogin = RegistrationLoginBinding.inflate(layoutInflater)
         bindingregister = RegistrationPageBinding.inflate(layoutInflater)
         bindingmissingsensor = NonFunctionalAppBinding.inflate(layoutInflater)
+        bindingcameraview = CameraViewBinding.inflate(layoutInflater)
 
 
         MyUtils.init(
@@ -71,6 +92,16 @@ class MainActivity : ComponentActivity(){
             //mistake alert audios
             R.raw.prostration_initialized,
             R.raw.ruku_missed,
+            R.raw.bow_half_complete,
+            R.raw.prostration_one_initialized,
+            R.raw.prostration_one_complete,
+            R.raw.prostration_two_initialized,
+            R.raw.prostration_two_complete,
+            R.raw.prostration_excess,
+            R.raw.prostration_completely_missed,
+            R.raw.prostration_missed_one,
+            R.raw.prayer_complete,
+            R.raw.praying_excess,
             )
 
         //useful classes
@@ -82,9 +113,81 @@ class MainActivity : ComponentActivity(){
         //shows login or registration page
         register_loginStuff()
 
+    }
 
+    private fun onFaceDetected(faces:List<Face>) = with(bindingcameraview.graphicOverlay){
+        //Task completed successfully
+        if (faces.isEmpty()){
+            MyUtils.showToast("No face to found")
+            return
+        }
+
+        this.clear()
+        for (i in faces.indices) {
+            val face = faces[i]
+            val faceGraphic = FaceContourGraphic(this)
+            this.add(faceGraphic)
+            faceGraphic.updatedFace(face)
+
+        }
+    }
+
+    private fun onFaceCropped(face: Bitmap){
+//        faceDetection.stop()
+        //Todo
+    }
+
+    // Start the camera and binds its lifecycle to the activity
+    private fun startCamera() {
+        val cameraProviderFuture = ProcessCameraProvider.getInstance(this)
+
+        // build FaceDetectorOptions
+        val cameraOptions = FaceDetectorOptions.Builder()
+            .setPerformanceMode(FaceDetectorOptions.PERFORMANCE_MODE_ACCURATE)
+            .setLandmarkMode(FaceDetectorOptions.LANDMARK_MODE_ALL)
+            .setClassificationMode(FaceDetectorOptions.CLASSIFICATION_MODE_ALL)
+            .setMinFaceSize(0.15f)
+            .enableTracking()
+            .build()
+        faceDetector = com.google.mlkit.vision.face.FaceDetection.getClient(cameraOptions)
+
+        cameraProviderFuture.addListener({
+            // Used to bind the lifecycle of cameras to the lifecycle owner
+            val cameraProvider: ProcessCameraProvider = cameraProviderFuture.get()
+
+            // Preview
+            val preview = Preview.Builder()
+                .build()
+                .also {
+                    it.setSurfaceProvider(bindingcameraview.viewFinder.surfaceProvider)
+                }
+
+            val imageAnalyzer = ImageAnalysis.Builder()
+//                .setTargetResolution(IMAGE_RESOLUTION)
+                .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_RGBA_8888)
+                .build()
+                .also {
+                    it.setAnalyzer(cameraExecutor, faceDetection)
+                }
+
+            // Select front camera as default
+            val cameraSelector = CameraSelector.DEFAULT_FRONT_CAMERA
+
+            try {
+                // Unbind the use cases before rebinding
+                cameraProvider.unbindAll()
+
+                // Bind use cases to camera
+                cameraProvider.bindToLifecycle(this, cameraSelector, preview, imageAnalyzer)
+            } catch (exc: Exception) {
+                Log.e(TAG, "Use case binding failed", exc)
+            }
+
+        }, ContextCompat.getMainExecutor(this))
 
     }
+
+
 
     //Android life cycle functions onResume, onPause and onDestroy
     override fun onResume() {
@@ -102,6 +205,7 @@ class MainActivity : ComponentActivity(){
     override fun onDestroy() {
         super.onDestroy()
         sensors.unregisterListeners()
+//        if(::testTo.isInitialized)
     }
 
     fun sensorsAvailabilityCheck() {
@@ -223,7 +327,7 @@ class MainActivity : ComponentActivity(){
         bindinghome.tvWelcomeUser.text =
             "As-Salaam-Alaikum ${userDetails.name} 😁," +
             "\nWelcome back to Prayer Captious App!"
-        val seconds = 10 * 1000L //10 seconds
+        val seconds = 3 * 1000L //10 seconds
         val countdown = object : CountDownTimer(seconds, 1000) {
 
             override fun onTick(millisUntilFinished: Long) {
@@ -247,6 +351,23 @@ class MainActivity : ComponentActivity(){
         bindinghome.btnTimerStop.setOnClickListener(){
             countdown.cancel()
         }
+
+        //Starting camera and ML model for face detection (ML is within start camera function)
+        //cancel timer if camera analyzer is called and start camera functionality instead
+        bindinghome.btnCameraAnalyzer.setOnClickListener(){
+            countdown.cancel()
+            startCamera()
+            //shows face detection camera
+            faceDetection = FaceDetection(
+                activity = this,
+                faceDetector = faceDetector,
+                onFacesDetected =  ::onFaceDetected,
+                onFaceCropped = ::onFaceCropped
+            )
+            setContentView(bindingcameraview.root)
+        }
+
+
     }
 
     fun sensorStuff(){
