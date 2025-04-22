@@ -6,6 +6,14 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     tools:context=".MainActivity">
 
+<!--    <Button-->
+<!--        android:id="@+id/btnPrayerIDinit"-->
+<!--        android:layout_width="match_parent"-->
+<!--        android:layout_height="wrap_content"-->
+<!--        android:text="Start a prayer"-->
+<!--        android:textSize="20sp"-->
+<!--        android:layout_weight="1"/>-->
+
     <androidx.camera.view.PreviewView
         android:id="@+id/viewFinder"
         android:layout_width="match_parent"

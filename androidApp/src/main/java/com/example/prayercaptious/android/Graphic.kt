@@ -4,6 +4,7 @@ import android.graphics.Canvas
 import android.hardware.camera2.CameraCharacteristics
 
 abstract class Graphic(private val overlay: GraphicOverlay) {
+
     //Draws the graphic on the provided canvas
     abstract fun draw(canvas: Canvas)
 

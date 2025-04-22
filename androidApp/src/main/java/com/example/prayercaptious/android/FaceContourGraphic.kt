@@ -3,10 +3,17 @@ package com.example.prayercaptious.android
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
+import android.os.Build
+import android.util.Log
+import androidx.annotation.RequiresApi
 import com.google.mlkit.vision.face.Face
 import java.lang.Math.round
+import java.time.Instant
+import java.time.ZoneOffset
+import java.time.format.DateTimeFormatter
 
-class FaceContourGraphic(overlay:GraphicOverlay): Graphic(overlay) {
+class FaceContourGraphic(overlay: GraphicOverlay, db: SQLliteDB, user: User,prayerID:Int): Graphic(overlay) {
+
     companion object {
         private const val BOX_STROKE_WIDTH = 5.0f
 
@@ -24,6 +31,8 @@ class FaceContourGraphic(overlay:GraphicOverlay): Graphic(overlay) {
     }
 
     private val boxPaint: Paint
+    private val userid:Int
+    private val prayerid:Int = prayerID
     private var cameraDistance: Float = 0f
     private var left:Float = 0f
     private var right:Float = 0f
@@ -34,12 +43,22 @@ class FaceContourGraphic(overlay:GraphicOverlay): Graphic(overlay) {
     private var actual_width:Float = 15f
     private var focal_lense:Float = 1000f
 
+    private var timestamps:String = ""
+
     //The detected face instance
     private var face: Face?=null
+
+    private val userData:User = user
+    private val db:SQLliteDB = db
+    private var faceDetectionData = FaceDetectionData()
+
 
     init {
         currentColorIndex = (currentColorIndex+1)% COLOR_CHOICES.size
         val selectedColor = COLOR_CHOICES[currentColorIndex]
+
+        //db inits
+        userid = db.login_details(user).id
 
         //Paint for drawing the bounding box of the detected face
         boxPaint = Paint().apply{
@@ -64,7 +83,6 @@ class FaceContourGraphic(overlay:GraphicOverlay): Graphic(overlay) {
         right = translateX(face.boundingBox.right.toFloat())
         bottom = translateY(face.boundingBox.bottom.toFloat())
     }
-
     fun faceArea(canvas: Canvas){
         faceArea = (top*right)/1000
         faceArea = round(faceArea.toDouble()).toFloat()
@@ -90,8 +108,16 @@ class FaceContourGraphic(overlay:GraphicOverlay): Graphic(overlay) {
     fun foundFaceRectangleOverlay(canvas: Canvas){
         canvas.drawRect(left,top,right,bottom,boxPaint)
     }
+    @RequiresApi(Build.VERSION_CODES.O)
+    fun timeStamp() {
+        timestamps = DateTimeFormatter
+            .ofPattern("dd-MM-yyyy HH:mm:ss.SSSSSS")
+            .withZone(ZoneOffset.UTC)
+            .format(Instant.now())
+    }
+    @RequiresApi(Build.VERSION_CODES.O)
     override fun draw(canvas: Canvas) {
-
+        timeStamp()
         // Translate the bounding box coordinates to fit the overlay view
         boundingBoxCoordinates()
 
@@ -103,5 +129,17 @@ class FaceContourGraphic(overlay:GraphicOverlay): Graphic(overlay) {
 
         //State face area information
         faceArea(canvas)
-    }
+
+        Log.e("init test",prayerid.toString())
+        faceDetectionData = FaceDetectionData(userid,prayerid,timestamps,cameraDistance.toDouble(),faceArea.toDouble())
+        db.insertFaceDetectionData(faceDetectionData)
+
+        //Ensuring data is correctly registered
+//    Log.e("FaceDetectionDB",
+//        userid.toString()+" "
+//            +prayerid.toString()+" "
+//            +faceDetectionData.timeStamp+" "
+//            +faceDetectionData.faceDistance+" "
+//            +faceDetectionData.faceArea)
+//    }
 }

@@ -27,6 +27,12 @@ class SQLliteDB(
         private const val TABLE_USER = "dim_user"
         private const val TABLE_GYRO = "gyroscope"
         private const val TABLE_LINACC = "linear_acceleration"
+        private const val TABLE_FACE_DETECTION = "face_detection"
+
+        // Universal columns for the project
+        private const val COL_PRAYER_ID = "prayer_id"
+        private const val COL_TIMESTAMP = "event_time"
+
 
         // user table columns
         private const val COL_USER_ID = "user_id"
@@ -36,8 +42,6 @@ class SQLliteDB(
         private const val COL_HEIGHT = "height"
 
         // gyro/lin acc table columns
-        private const val COL_PRAYER_ID = "prayer_id"
-        private const val COL_TIMESTAMP = "event_time"
         private const val COL_X_GYRO = "x_gyro"
         private const val COL_Y_GYRO = "y_gyro"
         private const val COL_Z_GYRO = "z_gyro"
@@ -48,6 +52,10 @@ class SQLliteDB(
         private const val COL_PLACEMENT = "placement"
         private const val COL_SIDE = "side"
         private const val COL_ELEVATION = "elevation"
+
+        //Face detection table columns
+        private const val COL_FACE_DISTANCE = "face_distance"
+        private const val COL_FACE_AREA = "face_area"
 
 
 
@@ -94,10 +102,22 @@ class SQLliteDB(
                 +");"
                 )
 
+        val createFaceDetectionTable = ("CREATE TABLE IF NOT EXISTS "+ TABLE_FACE_DETECTION+" ("
+                + COL_USER_ID+" INTEGER,"
+                + COL_PRAYER_ID+" INTEGER,"
+                + COL_TIMESTAMP+" TEXT,"
+                + COL_FACE_DISTANCE+" DOUBLE,"
+                + COL_FACE_AREA+" DOUBLE,"
+                + " FOREIGN KEY ($COL_USER_ID)"
+                + " REFERENCES $TABLE_USER ($COL_USER_ID) ON UPDATE CASCADE ON DELETE CASCADE"
+                +");"
+                )
+
         //Creating user table :)
         db?.execSQL(createUserTable)
         db?.execSQL(createGyroscopeTable)
         db?.execSQL(createLinAccTable)
+        db?.execSQL(createFaceDetectionTable)
 
         //Enabling foreign key support
         db?.setForeignKeyConstraintsEnabled(true)
@@ -192,10 +212,27 @@ class SQLliteDB(
         return user
     }
 
-    fun getPrayerID(user:User):Int{
+    fun getPrayerIDSensors(user:User):Int{
         val db = this.readableDatabase
         val gyroPrayerIDQuery = "SELECT MAX($COL_PRAYER_ID) AS $COL_PRAYER_ID FROM $TABLE_GYRO WHERE $COL_USER_ID = ${user.id}"
         val cursor:Cursor = db.rawQuery(gyroPrayerIDQuery,null)
+
+        //if there are no prayer id associated with the user
+        var prayerID= 0
+
+        //get the maximum prayer id associated with the user
+        if (cursor.moveToFirst()){
+            prayerID = cursor.getInt(cursor.getColumnIndex(COL_PRAYER_ID).toInt())
+        }
+        cursor.close()
+        db.close()
+        return prayerID
+    }
+
+    fun getPrayerIDFaceDetection(user:User):Int{
+        val db = this.readableDatabase
+        val fdPrayerIDQuery = "SELECT MAX($COL_PRAYER_ID) AS $COL_PRAYER_ID FROM $TABLE_FACE_DETECTION WHERE $COL_USER_ID = ${user.id}"
+        val cursor:Cursor = db.rawQuery(fdPrayerIDQuery,null)
 
         //if there are no prayer id associated with the user
         var prayerID= 0
@@ -252,6 +289,22 @@ class SQLliteDB(
         return result == (-1).toLong()
     }
 
+
+    fun insertFaceDetectionData(faceDetectionData: FaceDetectionData):Boolean{
+        val db = this.writableDatabase
+        val cv = ContentValues()
+        cv.put(COL_USER_ID,faceDetectionData.userID)
+        cv.put(COL_PRAYER_ID, faceDetectionData.prayerID)
+        cv.put(COL_TIMESTAMP, faceDetectionData.timeStamp)
+        cv.put(COL_FACE_DISTANCE, faceDetectionData.faceDistance)
+        cv.put(COL_FACE_AREA, faceDetectionData.faceArea)
+
+
+        val result = db.insert(TABLE_FACE_DETECTION,null, cv)
+        db.close()
+        // if result is -1 than some error has occured
+        return result == (-1).toLong()
+    }
     fun foreign_enabled(){
         val db = this.readableDatabase
         val cursor = db.rawQuery("PRAGMA foreign_keys;", null)
@@ -276,10 +329,12 @@ class SQLliteDB(
 //        val deleteCurrentLinearAccPrayerID = "DELETE FROM $TABLE_LINACC WHERE $COL_USER_ID = $userid AND $COL_PRAYER_ID = $prayerid;"
         val deleteCurrentGyroPrayerID = "DELETE FROM $TABLE_GYRO WHERE $COL_USER_ID = $userid AND $COL_PRAYER_ID = (SELECT MAX($COL_PRAYER_ID) FROM $TABLE_GYRO WHERE $COL_USER_ID = $userid);"
         val deleteCurrentLinearAccPrayerID = "DELETE FROM $TABLE_LINACC WHERE $COL_USER_ID = $userid AND $COL_PRAYER_ID = (SELECT MAX($COL_PRAYER_ID) FROM $TABLE_LINACC WHERE $COL_USER_ID = $userid);"
+        val deleteCurrentFDTable = "DELETE FROM $TABLE_FACE_DETECTION WHERE $COL_USER_ID = $userid;"
         val result_gyro = db?.execSQL(deleteCurrentGyroPrayerID)
         val result_linacc = db?.execSQL(deleteCurrentLinearAccPrayerID)
+        val result_fd = db?.execSQL(deleteCurrentFDTable)
 
-        Log.d("DBTag","DeleteResultGyro $result_gyro\nDeleteResultLinAcc $result_linacc")
+        Log.d("DBTag","DeleteResultGyro $result_gyro\nDeleteResultLinAcc $result_linacc\nDeleteResultFD $result_fd")
         db.close()
 
 

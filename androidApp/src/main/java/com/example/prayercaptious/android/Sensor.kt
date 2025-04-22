@@ -1,19 +1,11 @@
 package com.example.prayercaptious.android
 
-import android.content.Context
 import android.graphics.Color
 import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
-import android.media.AudioManager
-import android.media.MediaPlayer
-import android.net.Uri
 import android.os.Build
-import android.os.SystemClock
-import android.provider.MediaStore.Audio
-import android.provider.MediaStore.Audio.Media
-import android.provider.MediaStore.INTENT_ACTION_MEDIA_PLAY_FROM_SEARCH
 import android.util.Log
 import android.widget.AutoCompleteTextView
 import android.widget.Spinner
@@ -22,14 +14,10 @@ import androidx.annotation.RequiresApi
 import com.jjoe64.graphview.GraphView
 import com.jjoe64.graphview.series.DataPoint
 import com.jjoe64.graphview.series.LineGraphSeries
-import org.joml.Math.sqrt
-import java.nio.DoubleBuffer
 import java.time.Instant
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 import kotlin.math.absoluteValue
-import kotlin.time.*
-import kotlin.properties.Delegates
 
 
 //Collect data of specific sensors: x,y,z axis of gyroscope, linear acceleration
@@ -563,7 +551,7 @@ open class sensors(
     fun initializePrayerID() {
 
         //+1 to ensure last prayerid is not used to collect data
-        prayerid = db.getPrayerID(user) + 1
+        prayerid = db.getPrayerIDSensors(user) + 1
         gyroDataDB.userID = user.id
         linaccDataDB.userID = user.id
         gyroDataDB.prayerID = prayerid

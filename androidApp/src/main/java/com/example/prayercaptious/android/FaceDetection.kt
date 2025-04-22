@@ -15,7 +15,7 @@ class FaceDetection(
     private val activity: MainActivity,
     private val faceDetector: FaceDetector,
     private val onFacesDetected: (faces: List<Face>) -> Unit,
-    private val onFaceCropped: (face: Bitmap) -> Unit
+    private val onFaceCropped: (face: Bitmap) -> Unit,
 ) : ImageAnalysis.Analyzer {
 
     private var isAnalysisActive = true
@@ -90,6 +90,7 @@ class FaceDetection(
             try {
                 val faceBitmap = cropFaceBitmap(bitmapImage, face.boundingBox)
                 faceBitmap?.let { onFaceCropped(it) }
+
             } catch (e: Exception) {
                 Log.e(TAG, "Error: $e")
             }

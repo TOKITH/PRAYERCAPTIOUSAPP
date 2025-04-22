@@ -1,18 +1,10 @@
 package com.example.prayercaptious.android
 
-import android.annotation.SuppressLint
 import android.content.Context
-import android.hardware.SensorEventListener
-import android.media.AudioManager
 import android.media.MediaPlayer
 import android.net.Uri
-import android.provider.MediaStore.Audio.Media
-import android.util.Log
 import android.widget.Toast
-import androidx.core.content.ContentProviderCompat.requireContext
 import java.io.IOException
-import java.lang.Exception
-import java.lang.IllegalStateException
 
 class MyUtils()
 {
@@ -314,4 +306,3 @@ class MyUtils()
     }
 
 }
-
