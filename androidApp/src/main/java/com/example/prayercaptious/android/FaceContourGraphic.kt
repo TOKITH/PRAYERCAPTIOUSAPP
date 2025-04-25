@@ -4,7 +4,6 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.os.Build
-import android.util.Log
 import androidx.annotation.RequiresApi
 import com.google.mlkit.vision.face.Face
 import java.lang.Math.round
@@ -12,7 +11,7 @@ import java.time.Instant
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 
-class FaceContourGraphic(overlay: GraphicOverlay, db: SQLliteDB, user: User,prayerID:Int): Graphic(overlay) {
+class FaceContourGraphic(overlay: GraphicOverlay, db: SQLliteDB, user: User,prayerID:Int,myUtils: MyUtils): Graphic(overlay) {
 
     companion object {
         private const val BOX_STROKE_WIDTH = 5.0f
@@ -28,6 +27,7 @@ class FaceContourGraphic(overlay: GraphicOverlay, db: SQLliteDB, user: User,pray
         )
 
         private var currentColorIndex:Int = 0
+        private var qiam_init:Boolean = false
     }
 
     private val boxPaint: Paint
@@ -51,6 +51,10 @@ class FaceContourGraphic(overlay: GraphicOverlay, db: SQLliteDB, user: User,pray
     private val userData:User = user
     private val db:SQLliteDB = db
     private var faceDetectionData = FaceDetectionData()
+    private var myUtils:MyUtils = myUtils
+
+    //Prayer algo vars
+    private var time = 0
 
 
     init {
@@ -130,16 +134,29 @@ class FaceContourGraphic(overlay: GraphicOverlay, db: SQLliteDB, user: User,pray
         //State face area information
         faceArea(canvas)
 
-        Log.e("init test",prayerid.toString())
         faceDetectionData = FaceDetectionData(userid,prayerid,timestamps,cameraDistance.toDouble(),faceArea.toDouble())
         db.insertFaceDetectionData(faceDetectionData)
 
+
+        //Prayer Algorithm stuff happens here
+//        time+=1
+//        Log.e("PrayerAlgo",time.toString())
+
+       val prayerAlgorithmFD = PrayerAlgorithmFD(cameraDistance,faceArea,timestamps, myUtils)
+        if(!qiam_init) {
+            prayerAlgorithmFD.setQiamAndInitPrayerMovementMeasurement()
+            qiam_init = true
+        }
+        prayerAlgorithmFD.RunningMotion()
+        prayerAlgorithmFD.Testing()
+
         //Ensuring data is correctly registered
+//    Log.e("init test",prayerid.toString())
 //    Log.e("FaceDetectionDB",
 //        userid.toString()+" "
 //            +prayerid.toString()+" "
 //            +faceDetectionData.timeStamp+" "
 //            +faceDetectionData.faceDistance+" "
 //            +faceDetectionData.faceArea)
-//    }
+    }
 }

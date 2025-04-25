@@ -127,7 +127,7 @@ class MainActivity : ComponentActivity() {
         this.clear()
         for (i in faces.indices) {
             val face = faces[i]
-            val faceGraphic = FaceContourGraphic(this, MyUtils.myDB(),userData,prayerIDFD)
+            val faceGraphic = FaceContourGraphic(this, MyUtils.myDB(),userData,prayerIDFD,MyUtils)
             this.add(faceGraphic)
             faceGraphic.updatedFace(face)
 
@@ -332,8 +332,8 @@ class MainActivity : ComponentActivity() {
         bindinghome.tvWelcomeUser.text =
             "As-Salaam-Alaikum ${userDetails.name} 😁," +
                     "\nWelcome back to Prayer Captious App!"
-        val seconds = 3 * 1000L //10 seconds
-        val countdown = object : CountDownTimer(seconds, 1000) {
+        val seconds = 5 * 1000L //10 seconds
+        val countdown_sensors = object : CountDownTimer(seconds, 1000) {
 
             override fun onTick(millisUntilFinished: Long) {
                 bindinghome.tvCountdown.text =
@@ -348,30 +348,44 @@ class MainActivity : ComponentActivity() {
             }
         }
 
+        val countdown_facedetection = object : CountDownTimer(seconds, 1000) {
+
+            override fun onTick(millisUntilFinished: Long) {
+                bindinghome.tvCountdown.text =
+                    round(millisUntilFinished.toDouble() / 1000).toString()
+            }
+
+            override fun onFinish() {
+                //shows face detection camera
+                startCamera()
+                faceDetection = FaceDetection(
+                    activity = this@MainActivity,
+                    faceDetector = faceDetector,
+                    onFacesDetected = ::onFaceDetected,
+                    onFaceCropped = ::onFaceCropped
+                )
+                prayerIDFD = MyUtils.myDB().getPrayerIDFaceDetection(userData)+1
+                setContentView(bindingcameraview.root)
+            }
+        }
+
         //10 second timer before start collecting data
         bindinghome.btnTimerStart.setOnClickListener() {
-            countdown.start()
+            countdown_sensors.start()
+            countdown_facedetection.cancel()
         }
 
         //cancel timer if more time is required
         bindinghome.btnTimerStop.setOnClickListener() {
-            countdown.cancel()
+            countdown_sensors.cancel()
+            countdown_facedetection.cancel()
         }
 
         //Starting camera and ML model for face detection (ML is within start camera function)
         //cancel timer if camera analyzer is called and start camera functionality instead
         bindinghome.btnCameraAnalyzer.setOnClickListener() {
-            countdown.cancel()
-            startCamera()
-            //shows face detection camera
-            faceDetection = FaceDetection(
-                activity = this,
-                faceDetector = faceDetector,
-                onFacesDetected = ::onFaceDetected,
-                onFaceCropped = ::onFaceCropped
-            )
-            prayerIDFD = MyUtils.myDB().getPrayerIDFaceDetection(userData)+1
-            setContentView(bindingcameraview.root)
+            countdown_sensors.cancel()
+            countdown_facedetection.start()
         }
     }
 
